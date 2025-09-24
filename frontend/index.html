@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Phone List UI</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <main>
+        <h1>Phone List</h1>
+
+        <section id="status" aria-live="polite"></section>
+
+        <form id="addForm">
+            <label for="number">Phone number</label>
+            <input id="number" style="width:200px" name="number" placeholder="(555) 123-4567 or 5551234567" required />
+            <label for="point_to">Point to</label>
+            <input id="point_to" name="point_to" placeholder="Extension or target (optional)" />
+            <button type="submit">Add</button>
+        </form>
+
+        <section>
+            <h2>Numbers</h2>
+            <ul id="list"></ul>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
