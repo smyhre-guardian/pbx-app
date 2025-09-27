@@ -22,3 +22,14 @@ Tests
 Run tests with pytest:
 
    .\.venv\Scripts\Activate.ps1; pytest -q
+
+Frontend (optional)
+-------------------
+
+The `frontend/` folder was migrated to a Vite + Vue 3 app. To develop the frontend:
+
+1. cd frontend
+2. npm install
+3. npm run dev
+
+The dev server usually runs at http://localhost:5173

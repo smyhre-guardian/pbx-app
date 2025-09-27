@@ -1,9 +1,12 @@
+from storage import DwStorage
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List
-from models import PhoneNumber, PhoneNumberCreate, PhoneNumberUpdate
-from storage import storage_instance, create_db_and_tables
+from typing import List, Optional
+from models import PhoneNumber, PhoneNumberCreate, PhoneNumberUpdate, PortStatus
+from storage import storage_instance, create_db_and_tables, cdr_storage, port_status_storage
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from fastapi import HTTPException
 
 
 @asynccontextmanager
@@ -44,6 +47,11 @@ def create_phone(payload: PhoneNumberCreate):
 def list_phones():
     return storage_instance.list_all()
 
+@app.get("/port_status")
+def list_port_status():
+    """Get the status of all ports from the phone system"""
+    return port_status_storage.list_all()
+
 
 @app.get("/phone_numbers/{item_id}", response_model=PhoneNumber)
 def get_phone(item_id: int):
@@ -74,6 +82,60 @@ def delete_phone(item_id: int):
     if not ok:
         raise HTTPException(status_code=404, detail="Not found")
     return None
+
+
+
+@app.get("/call_records")
+def list_call_records(
+    q: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 25,
+    start: Optional[str] = None,
+    end: Optional[str] = None,
+):
+    """Return call records from the CDR database, joined with Lumen fields."""
+    try:
+        page = max(1, int(page))
+    except Exception:
+        page = 1
+    try:
+        page_size = max(1, min(1000, int(page_size)))
+    except Exception:
+        page_size = 25
+
+    def _parse_iso(s: str) -> datetime:
+        try:
+            s2 = s.rstrip("Z")
+            return datetime.fromisoformat(s2)
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"Invalid datetime: {s}")
+
+    start_dt = _parse_iso(start) if start else None
+    end_dt = _parse_iso(end) if end else None
+    rows = cdr_storage.list_with_lumen_join(
+        start=start_dt,
+        end=end_dt,
+        limit=page * page_size,
+        q=q,
+    )
+    start_idx = (page - 1) * page_size
+    page_rows = rows[start_idx:start_idx + page_size]
+    return page_rows
+
+# DW phone lookup endpoint
+@app.get("/phone_lookup")
+def phone_lookup(phone: str):
+    """Return all vPhoneLookup results for a given phone number from DW."""
+    # Accepts phone as string, returns all matches
+    results = []
+    from storage import engine_dw
+    from sqlalchemy import text
+    with engine_dw.connect() as conn:
+        query = text("SELECT cs_no, cnt, phone, first_day, last_day FROM vPhoneLookup WHERE phone = :phone")
+        rows = conn.execute(query, {"phone": phone}).fetchall()
+        for row in rows:
+            results.append({"cs_no": row[0], "cnt": row[1], "phone": row[2], "first_day": row[3], "last_day": row[4]})
+    return results
 
 
 if __name__ == "__main__":

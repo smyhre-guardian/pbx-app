@@ -1,16 +1,21 @@
-from typing import Optional, List
+
+from time import sleep
+from dotenv import load_dotenv
+load_dotenv()
+
+from typing import Optional, List, Any, cast
 import os
-from sqlmodel import SQLModel, Session, select, create_engine
-from models import PhoneNumber
+from sqlmodel import SQLModel, Session, select, create_engine, col
+from models import PhoneNumber, Lumen, Cdr, vPhoneLookup, PortStatus
+from datetime import datetime
+from sqlalchemy import desc, text
 from sqlalchemy.engine import URL
 
-def get_database_url() -> str:
-    env = os.getenv("DATABASE_URL")
-    if env:
-        return env
-    server = os.getenv("DB_SERVER", "nwa10")
-    database = os.getenv("DB_NAME", "DashboardTest")
-    driver = os.getenv("ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
+def _build_mssql_url_from_env(prefix: str = "") -> str:
+    # prefix allows APP_ or CDR_ env vars; default to no prefix
+    server = os.getenv(f"{prefix}DB_SERVER", "nwa10")
+    database = os.getenv(f"{prefix}DB_NAME", "DashboardTest")
+    driver = os.getenv(f"{prefix}ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
     connection_string = URL.create(
         "mssql+pyodbc",
         username=None,
@@ -20,31 +25,105 @@ def get_database_url() -> str:
         query={
             "driver": driver,
             "Trusted_Connection": "yes",
-            "Encrypt": "no"
-        }
+            "Encrypt": "no",
+        },
     )
     return str(connection_string)
 
+def _build_mysql_url_from_env(prefix: str = "") -> str:
+    server = os.getenv(f"{prefix}DB_SERVER", "127.0.0.1")
+    print ("server: " + server)
+    port = os.getenv(f"{prefix}DB_PORT", "3306")
+    database = os.getenv(f"{prefix}DB_NAME", "phones")
+    user = os.getenv(f"{prefix}DB_USER", "root")
+    password = os.getenv(f"{prefix}DB_PASSWORD", "silentknight").strip()
+    print ("pass: " + password)
+    driver = os.getenv(f"{prefix}DB_DRIVER", "pymysql")
+    query = {"charset": os.getenv(f"{prefix}DB_CHARSET", "utf8mb4")}
+    # driver = 'mariadbconnector'
+    connection_string = URL.create(
+        f"mysql+{driver}",
+        username=user or None,
+        password=password or None,
+        host=server,
+        port=int(port) if port else None,
+        database=database,
+        # query=query,
+    )
+    print(str(connection_string))
+    return str("mysql+pyodbc://test_user:asdf@pbx1")
+    return str(connection_string)
 
-DATABASE_URL = get_database_url()
-engine = create_engine(DATABASE_URL, echo=False)
+
+def get_database_url(role: str = "app") -> str:
+    """Return a database URL for the given role.
+
+    Priority:
+      - If DATABASE_URL is set, return it (useful for tests)
+      - Else, use role-specific env vars (APP_* for app, CDR_* for cdr)
+      - Defaults: app -> mssql, cdr -> mysql
+    """
+    env = os.getenv("DATABASE_URL")
+    if env:
+        return env
+
+    role = (role or "app").lower()
+    if role == "cdr":
+        db_type = os.getenv("CDR_DB_TYPE", "mysql").lower()
+        if db_type == "mysql":
+            return _build_mysql_url_from_env("CDR_")
+        # fallback to mssql if requested
+        return _build_mssql_url_from_env("CDR_")
+
+    if role == "dw":
+        return _build_mssql_url_from_env("DW_")
+
+    # app role (default)
+    db_type = os.getenv("APP_DB_TYPE", "mssql").lower()
+    if db_type == "mysql":
+        return _build_mysql_url_from_env("APP_")
+    return _build_mssql_url_from_env("APP_")
+
+
+# Engines for each role
+DATABASE_URL_APP = get_database_url("app")
+DATABASE_URL_CDR = get_database_url("cdr")
+DATABASE_URL_DW = get_database_url("dw")
+engine_app = create_engine(DATABASE_URL_APP, echo=False)
+engine_cdr = create_engine(DATABASE_URL_CDR, echo=False)
+engine_dw = create_engine(DATABASE_URL_DW, echo=False)
+
+
+def create_db_and_tables_app():
+    SQLModel.metadata.create_all(engine_app)
+
 
 
 def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+    # backward compatible alias used by main/tests: create app DB tables
+    return create_db_and_tables_app()
 
 
-class Storage:
+class DwStorage:
+
+    def lookup_phone(self, number: str) -> Optional[vPhoneLookup]:
+        with engine_dw.connect() as conn:
+            result = conn.execute(text("SELECT cs_no, cnt, phone, first_day, last_day FROM vPhoneLookup WHERE phone = :phone ORDER BY cnt desc"), {"phone": number})
+            rows = result.fetchall()
+            if rows:
+                row = rows[0]
+                obj = vPhoneLookup(cs_no=row[0], cnt=row[1], phone=row[2], first_day=row[3], last_day=row[4], row_count=len(rows))
+                return obj
+            return None
+
+class AppStorage:
     def __init__(self):
-        create_db_and_tables()
+        create_db_and_tables_app()
 
     def add(self, number: str, point_to: Optional[str] = None) -> Optional[PhoneNumber]:
-        # number is expected to be digits-only (10 digits) from the API layer
         norm = "".join(ch for ch in number if ch.isdigit())
-        with Session(engine) as session:
-            existing = session.exec(
-                select(PhoneNumber).where(PhoneNumber.number == norm)
-            ).first()
+        with Session(engine_app) as session:
+            existing = session.exec(select(PhoneNumber).where(PhoneNumber.number == norm)).first()
             if existing:
                 return None
             obj = PhoneNumber(number=norm, point_to=point_to)
@@ -54,16 +133,16 @@ class Storage:
             return obj
 
     def list_all(self) -> List[PhoneNumber]:
-        with Session(engine) as session:
+        with Session(engine_app) as session:
             stmt = select(PhoneNumber)
             return list(session.exec(stmt))
 
     def get(self, item_id: int) -> Optional[PhoneNumber]:
-        with Session(engine) as session:
+        with Session(engine_app) as session:
             return session.get(PhoneNumber, item_id)
 
     def delete(self, item_id: int) -> bool:
-        with Session(engine) as session:
+        with Session(engine_app) as session:
             obj = session.get(PhoneNumber, item_id)
             if not obj:
                 return False
@@ -72,23 +151,19 @@ class Storage:
             return True
 
     def update(self, item_id: int, **fields) -> Optional[PhoneNumber]:
-        """Patch-update fields for a PhoneNumber. Returns updated object or None if not found or duplicate number."""
-        with Session(engine) as session:
+        with Session(engine_app) as session:
             obj = session.get(PhoneNumber, item_id)
             if not obj:
                 return None
-            # If updating number, normalize
-            if 'number' in fields and fields['number'] is not None:
-                norm = "".join(ch for ch in fields['number'] if ch.isdigit())
-                # check for duplicates
+            if "number" in fields and fields["number"] is not None:
+                norm = "".join(ch for ch in fields["number"] if ch.isdigit())
                 existing = session.exec(
                     select(PhoneNumber).where(PhoneNumber.number == norm, PhoneNumber.id != item_id)
                 ).first()
                 if existing:
                     return None
                 obj.number = norm
-            # other optional fields
-            for k in ('point_to', 'label', 'usage', 'path'):
+            for k in ("point_to", "label", "usage", "path"):
                 if k in fields:
                     setattr(obj, k, fields[k])
             session.add(obj)
@@ -97,5 +172,100 @@ class Storage:
             return obj
 
 
-storage_instance = Storage()
+
+class CdrStorage:
+    """Read-only storage class for CDRs. Provides CDR queries and join to Lumen."""
+    def __init__(self):
+        pass
+
+    def list_with_lumen_join(self, start: Optional[datetime] = None, end: Optional[datetime] = None, limit: int = 100, q: Optional[str] = None) -> list:
+        """Return CDRs joined with Lumen on orig_dnis == TN, including Lumen fields."""
+        with Session(engine_cdr) as session:
+            col = cast(Any, Cdr.calldate)
+            stmt = select(Cdr, Lumen).join(Lumen, Cdr.__table__.c.orig_dnis == Lumen.__table__.c.TN)
+            if start and end:
+                stmt = stmt.where(col != None, col >= start, col <= end)
+            if q:
+                ql = str(q).lower()
+                stmt = stmt.where(
+                    (Cdr.__table__.c.src.like(f"%{ql}%")) |
+                    (Cdr.__table__.c.dst.like(f"%{ql}%")) |
+                    (Cdr.__table__.c.clid.like(f"%{ql}%")) |
+                    (Cdr.__table__.c.uniqueid.like(f"%{ql}%"))
+                )
+            stmt = stmt.order_by(desc(col)).limit(limit)
+            results = session.exec(stmt).all()
+            out = []
+            for cdr, lumen in results:
+                calldate = getattr(cdr, "calldate", None)
+                num = str(getattr(cdr, "src", None))[-10:]
+                print (f"num: {num}")
+                lookup = DwStorage().lookup_phone(num)
+                out.append({
+                    "id": cdr.id,
+                    "caller": getattr(cdr, "src", None),
+                    "callee": getattr(cdr, "dst", None),
+                    "calldate": calldate.isoformat() if calldate else None,
+                    "orig_dnis": getattr(cdr, "orig_dnis", None),
+                    "duration": getattr(cdr, "duration", None),
+                    "disposition": getattr(cdr, "disposition", None),
+                    # dw fields
+                    "cs_no": getattr(lookup, "cs_no", None) if lookup else None,
+                    "cs_no_rows": lookup.row_count if lookup else None,
+                    # Lumen fields
+                    "lumen_TN": getattr(lumen, "TN", None),
+                    "lumen_ring_to": getattr(lumen, "ring_to", None),
+                    "lumen_DNIS": getattr(lumen, "DNIS", None),
+                    "lumen_status": getattr(lumen, "status", None),
+                    "lumen_order_num": getattr(lumen, "order_num", None),
+                    "lumen_port_date": getattr(lumen, "port_date", None),
+                    "lumen_usage": getattr(lumen, "usage", None),
+                    "lumen_notes": getattr(lumen, "notes", None),
+                    "lumen_company": getattr(lumen, "company", None),
+                })
+            return out
+
+    def list_recent(self, limit: int = 100) -> List[Cdr]:
+        with Session(engine_cdr) as session:
+            col = cast(Any, Cdr.calldate)
+            stmt = select(Cdr).order_by(desc(col)).limit(limit)
+            return list(session.exec(stmt))
+
+    def list_all(self) -> List[Cdr]:
+        with Session(engine_cdr) as session:
+            stmt = select(Cdr)
+            return list(session.exec(stmt))
+
+    def get(self, item_id: int) -> Optional[Cdr]:
+        with Session(engine_cdr) as session:
+            return session.get(Cdr, item_id)
+
+    def list_by_date_range(self, start: datetime, end: datetime, limit: Optional[int] = None) -> List[Cdr]:
+        with Session(engine_cdr) as session:
+            col = cast(Any, Cdr.calldate)
+            stmt = select(Cdr).where(col != None, col >= start, col <= end).order_by(desc(col))
+            if limit:
+                stmt = stmt.limit(limit)
+            return list(session.exec(stmt))
+
+
+# Port Status Storage
+class PortStatusStorage:
+    def list_all(self):
+        with Session(engine_dw) as session:
+            query = text("""
+                SELECT TN, ring_to, DNIS, usage, notes, order_num, 
+                       port_date, pbx_dst, last_call, call_count, last_tested,
+                       test_count, avg_dur, rcvr_prefix, last_cs_no, LastHour, last_cid
+                FROM vPortStatus
+                ORDER BY TN
+            """)
+            result = session.execute(query)
+            return [dict(row._mapping) for row in result]
+
+# Instances
+storage_instance = AppStorage()  # backward-compatible name used across the codebase
+app_storage = storage_instance
+cdr_storage = CdrStorage()
+port_status_storage = PortStatusStorage()
 
