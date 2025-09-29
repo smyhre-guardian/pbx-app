@@ -1,4 +1,3 @@
-
 from time import sleep
 from dotenv import load_dotenv
 load_dotenv()
@@ -6,7 +5,7 @@ load_dotenv()
 from typing import Optional, List, Any, cast
 import os
 from sqlmodel import SQLModel, Session, select, create_engine, col
-from models import PhoneNumber, Lumen, Cdr, vPhoneLookup, PortStatus
+from models import LumenDw, PhoneNumber, Lumen, Cdr, vPhoneLookup, PortStatus
 from datetime import datetime
 from sqlalchemy import desc, text
 from sqlalchemy.engine import URL
@@ -99,9 +98,9 @@ def create_db_and_tables_app():
 
 
 
-def create_db_and_tables():
+# def create_db_and_tables():
     # backward compatible alias used by main/tests: create app DB tables
-    return create_db_and_tables_app()
+    # return create_db_and_tables_app()
 
 
 class DwStorage:
@@ -117,8 +116,8 @@ class DwStorage:
             return None
 
 class AppStorage:
-    def __init__(self):
-        create_db_and_tables_app()
+    # def __init__(self):
+        # create_db_and_tables_app()
 
     def add(self, number: str, point_to: Optional[str] = None) -> Optional[PhoneNumber]:
         norm = "".join(ch for ch in number if ch.isdigit())
@@ -180,9 +179,9 @@ class CdrStorage:
 
     def list_with_lumen_join(self, start: Optional[datetime] = None, end: Optional[datetime] = None, limit: int = 100, q: Optional[str] = None) -> list:
         """Return CDRs joined with Lumen on orig_dnis == TN, including Lumen fields."""
-        with Session(engine_cdr) as session:
+        with Session(engine_dw) as session:
             col = cast(Any, Cdr.calldate)
-            stmt = select(Cdr, Lumen).join(Lumen, Cdr.__table__.c.orig_dnis == Lumen.__table__.c.TN)
+            stmt = select(Cdr, LumenDw).join(LumenDw, Cdr.__table__.c.orig_dnis == LumenDw.__table__.c.TN)
             if start and end:
                 stmt = stmt.where(col != None, col >= start, col <= end)
             if q:
@@ -199,7 +198,7 @@ class CdrStorage:
             for cdr, lumen in results:
                 calldate = getattr(cdr, "calldate", None)
                 num = str(getattr(cdr, "src", None))[-10:]
-                print (f"num: {num}")
+                # print (f"num: {num}")
                 lookup = DwStorage().lookup_phone(num)
                 out.append({
                     "id": cdr.id,
@@ -262,6 +261,16 @@ class PortStatusStorage:
             """)
             result = session.execute(query)
             return [dict(row._mapping) for row in result]
+
+    def update(self, tn: str, fields: dict):
+        # Trim all string fields before updating
+        trimmed_fields = {key: value.strip() if isinstance(value, str) else value for key, value in fields.items()}
+        with Session(engine_cdr) as session:
+            query = text("UPDATE lumen SET " + ", ".join([f"`{key}` = :{key}" for key in trimmed_fields.keys()]) + " WHERE TN = :tn")
+            params = {**trimmed_fields, "tn": tn}
+            result = session.execute(query, params)
+            session.commit()
+            return True
 
 # Instances
 storage_instance = AppStorage()  # backward-compatible name used across the codebase

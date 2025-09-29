@@ -17,7 +17,7 @@
             <th class="sortable" @click="sortTable('last_call')">Last Call</th>
             <th class="sortable" @click="sortTable('call_count')">Call Count</th>
             <th class="sortable" @click="sortTable('last_call')">Last Tested</th>
-            <th class="sortable" @click="sortTable('test_count')">Tet Count</th>
+            <th class="sortable" @click="sortTable('test_count')">Test Count</th>
             <th class="sortable" @click="sortTable('rcvr_prefix')">RCVR Prefix</th>
             <th class="sortable" @click="sortTable('last_cs_no')">Last CS#</th>
             <th class="sortable" @click="sortTable('LastHour')">LastHour</th>
@@ -30,10 +30,38 @@
             <td>
               <a :href="`tel:91${port.TN}`" @click="pending(port)">{{ port.TN }}</a>
             </td>
-            <td>{{ port.ring_to }}</td>
-            <td>{{ port.DNIS }}</td>
-            <td>{{ port.usage }}</td>
-            <td class="notes">{{ port.notes }}</td>
+            <td @dblclick="enableEditing(port, 'ring_to')">
+              <template v-if="isEditing(port, 'ring_to')">
+                <input v-model="port.editableValues.ring_to" @blur="saveEdit(port, 'ring_to')" @keyup.enter="saveEdit(port, 'ring_to')" />
+              </template>
+              <template v-else>
+                {{ port.ring_to }}
+              </template>
+            </td>
+            <td @dblclick="enableEditing(port, 'DNIS')" :class="{ 'badDNIS': isBadDNIS(port) }">
+              <template v-if="isEditing(port, 'DNIS')">
+                <input v-model="port.editableValues.DNIS" @blur="saveEdit(port, 'DNIS')" @keyup.enter="saveEdit(port, 'DNIS')" />
+              </template>
+              <template v-else>
+                {{ port.DNIS }}
+              </template>
+            </td>
+            <td @dblclick="enableEditing(port, 'usage')">
+              <template v-if="isEditing(port, 'usage')">
+                <input v-model="port.editableValues.usage" @blur="saveEdit(port, 'usage')" @keyup.enter="saveEdit(port, 'usage')" />
+              </template>
+              <template v-else>
+                {{ port.usage }}
+              </template>
+            </td>
+            <td class="notes" @dblclick="enableEditing(port, 'notes')">
+              <template v-if="isEditing(port, 'notes')">
+                <input v-model="port.editableValues.notes" @blur="saveEdit(port, 'notes')" @keyup.enter="saveEdit(port, 'notes')" />
+              </template>
+              <template v-else>
+                {{ port.notes }}
+              </template>
+            </td>
             <td>{{ port.order_num }}</td>
             <td>{{ formatDate(port.port_date) }}</td>
             <td>{{ port.pbx_dst }}</td>
@@ -43,7 +71,7 @@
             <td>{{ port.test_count }}</td>
             <td>{{ port.rcvr_prefix }}</td>
             <td>{{ port.last_cs_no }}</td>
-            <td>{{ port.LastHour }}</td>
+            <td>{{ formatHr(port.LastHour) }}</td>
             <td>{{ port.last_cid }}</td>
             <td>{{ formatDuration(port.avg_dur) }}</td>
           </tr>
@@ -66,7 +94,8 @@ export default {
       sortAsc: true,
       isLoading: false,
       setLoading: null,
-      setRefreshCallback: null
+      setRefreshCallback: null,
+      currentlyEditing: null,
     };
   },
   methods: {
@@ -76,6 +105,9 @@ export default {
       try {
         const response = await fetch('http://localhost:8000/port_status');
         this.portStatus = await response.json();
+        this.portStatus.forEach(port => {
+          port.editableValues = { ...port };
+        });
         if (this.sortColumn) {
           this.sortTable(this.sortColumn, true);
         }
@@ -83,6 +115,34 @@ export default {
         console.error('Error fetching port status:', error);
       } finally {
         if (this.setLoading) this.setLoading(false);
+      }
+    },
+    enableEditing(port, field) {
+      this.currentlyEditing = { port, field };
+    },
+    isEditing(port, field) {
+      return this.currentlyEditing && this.currentlyEditing.port === port && this.currentlyEditing.field === field;
+    },
+    async saveEdit(port, field) {
+      try {
+        const updatedValue = port.editableValues[field];
+        const response = await fetch(`http://localhost:8000/port_status/${port.TN}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ [field]: updatedValue }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save data');
+        }
+
+        port[field] = updatedValue;
+      } catch (error) {
+        console.error('Error saving data:', error);
+      } finally {
+        this.currentlyEditing = null;
       }
     },
     formatPhoneNumber(phone) {
@@ -102,6 +162,13 @@ export default {
     },
     elevTestNeeded(port) {
       return port.usage.toLowerCase().indexOf('elev') !== -1 && (!port.call_count || port.call_count < 1) && (!port.test_count || port.test_count < 1);
+    },
+    isBadDNIS(port) {
+      if (!port.DNIS) return false;
+      const dnis = port.DNIS.trim();
+      if (!port.ring_to || port.ring_to.length < 10) return false;
+      console.log('Comparing', port.ring_to.slice(-4), 'to', dnis);
+      return port.ring_to.slice(-4) !== dnis;
     },
     formatDate(dateString) {
       if (!dateString) return '';
@@ -178,6 +245,10 @@ export default {
       const minutes = Math.floor(seconds / 60);
       const remainingSeconds = seconds % 60;
       return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    },
+    formatHr(hr) {
+      if (hr == null) return '';
+      return hr.slice(4,6) + '-' + hr.slice(6,8) + ' ' + hr.slice(8,10) + ':00';
     },
     refreshData() {
       this.fetchPortStatus();
@@ -273,5 +344,8 @@ tr.testNeeded {
 }
 tr.elevTestNeeded {
     background: #ffebcc;
+}
+td.badDNIS {
+    background: #fe9524;
 }
 </style>

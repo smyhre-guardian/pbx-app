@@ -1,8 +1,9 @@
 <template>
   <div class="phone-lookup">
-    <h1>Phone Lookup (DW)</h1>
+    <h1>Phone Lookup</h1><small style="display: block; margin-bottom: 10px; color:#777;">Refreshed every 10 minutes</small>
+    
     <form @submit.prevent="doLookup">
-      <input v-model="phone" placeholder="Enter phone number" />
+      <input v-model="phone" style="width: 250px" ref="search" placeholder="Enter phone number (any format)" />
       <button type="submit">Lookup</button>
     </form>
     <div v-if="loading">Loading...</div>
@@ -22,8 +23,8 @@
           <td>{{ row.cs_no }}</td>
           <td>{{ row.cnt }}</td>
           <td>{{ row.phone }}</td>
-          <td>{{ row.first_day }}</td>
-          <td>{{ row.last_day }}</td>
+          <td>{{ formatDay(row.first_day) }}</td>
+          <td>{{ formatDay(row.last_day) }}</td>
         </tr>
       </tbody>
     </table>
@@ -44,13 +45,19 @@ export default {
       error: ""
     };
   },
+  mounted() {
+    this.$refs.search.focus();
+  },
   methods: {
     async doLookup() {
       this.loading = true;
       this.error = "";
       this.results = [];
+      var stripped = this.phone.replace(/\D/g, '');
+      stripped = stripped.slice(-10);
+      this.phone = stripped;
       try {
-        const resp = await fetch(`${baseUrl}/phone_lookup?phone=${encodeURIComponent(this.phone)}`);
+        const resp = await fetch(`${baseUrl}/phone_lookup?phone=${encodeURIComponent(stripped)}`);
         if (!resp.ok) throw new Error("API error: " + resp.status);
         this.results = await resp.json();
       } catch (e) {
@@ -58,6 +65,11 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    formatDay(dayStr) {
+      if (!dayStr) return "";
+      dayStr = dayStr.toString();
+      return dayStr.slice(0,4) + '-' + dayStr.slice(4,6) + '-' + dayStr.slice(6,8);
     }
   }
 };

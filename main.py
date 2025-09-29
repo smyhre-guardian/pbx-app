@@ -1,19 +1,19 @@
-from storage import DwStorage
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
-from models import PhoneNumber, PhoneNumberCreate, PhoneNumberUpdate, PortStatus
-from storage import storage_instance, create_db_and_tables, cdr_storage, port_status_storage
+from models import PhoneNumber, PhoneNumberCreate, PhoneNumberUpdate
+from storage import storage_instance, cdr_storage, port_status_storage
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
-from fastapi import HTTPException
+from datetime import datetime
+from fastapi import HTTPException, Body
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ensure tables exist (no-op if already created)
-    create_db_and_tables()
+    # create_db_and_tables()
     yield
+    #after shutdown tasks
 
 app = FastAPI(title="Phone List API", version="0.1", lifespan=lifespan)
 
@@ -136,6 +136,16 @@ def phone_lookup(phone: str):
         for row in rows:
             results.append({"cs_no": row[0], "cnt": row[1], "phone": row[2], "first_day": row[3], "last_day": row[4]})
     return results
+
+
+@app.put("/port_status/{tn}", summary="Update port status")
+def update_port_status(tn: str, payload: dict = Body(...)):
+    """Update specific fields for a port status entry."""
+    updated = port_status_storage.update(tn, payload)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Port status entry not found")
+    return updated
+
 
 
 if __name__ == "__main__":

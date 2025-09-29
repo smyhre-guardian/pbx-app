@@ -15,12 +15,12 @@
           <tr>
             <th>Date</th>
             <th>Caller</th>
-            <th>Exten</th>
             <th>Original DNIS</th>
+            <th>PBX translate</th>
             <th>Secs</th>
-            <th>CS #</th>
+            <th>CS # (by CID)</th>
             <th>Usage</th>
-            <th>lumen_notes</th>
+            <th>Notes</th>
             <th>Port Date</th>
             <th>Order #</th>
           </tr>
@@ -30,8 +30,8 @@
           <tr v-for="r in records" :key="r.id">
             <td>{{ fmtDate(r.calldate) }}</td>
             <td>{{ fmtNumber(r.caller) }}</td>
-            <td>{{ fmtNumber(r.callee) }}</td>
             <td>{{ r.orig_dnis }}</td>
+            <td>{{ r.callee !== r.orig_dnis ? fmtNumber(r.callee) : '-same-' }}</td>
             <td>{{ r.duration || '-' }}</td>
             <td :class="{'highlight': !highlight(r)}">{{ r.cs_no || '-' }} <span v-if="r.cs_no_rows">[ {{ r.cs_no_rows  }} others]</span></td>
             <td>{{ r.lumen_usage || '-' }}</td>

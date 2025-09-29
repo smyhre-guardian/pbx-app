@@ -91,11 +91,29 @@ class CdrBase(SQLModel):
 
 
 class Cdr(CdrBase, table=True):
+    __tablename__ = "vCDR"
+    __table_args__ = {'schema': 'DW_Staging.dbo'}
     id: Optional[int] = Field(default=None, primary_key=True)
 
 
 # Lumen table model
 class Lumen(SQLModel, table=True):
+    __tablename__ = "lumen"
+    __table_args__ = {'schema': 'phones'}
+    id: int = Field(default=None, primary_key=True)
+    TN: Optional[int] = Field(default=None, index=True)
+    ring_to: Optional[str] = Field(default=None)
+    DNIS: Optional[str] = Field(default=None)
+    status: Optional[str] = Field(default=None)
+    order_num: Optional[str] = Field(default=None)
+    port_date: Optional[str] = Field(default=None)
+    usage: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    company: Optional[str] = Field(default=None)
+
+class LumenDw(SQLModel, table=True):
+    __tablename__ = "lumen"
+    __table_args__ = {'schema': 'DW_Staging.pbx'}
     id: int = Field(default=None, primary_key=True)
     TN: Optional[int] = Field(default=None, index=True)
     ring_to: Optional[str] = Field(default=None)
