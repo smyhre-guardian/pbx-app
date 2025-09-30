@@ -32,14 +32,15 @@ def _build_mssql_url_from_env(prefix: str = "") -> str:
 def _build_mysql_url_from_env(prefix: str = "") -> str:
     server = os.getenv(f"{prefix}DB_SERVER", "127.0.0.1")
     print ("server: " + server)
-    port = os.getenv(f"{prefix}DB_PORT", "3306")
+    port = os.getenv(f"{prefix}DB_PORT", "")
     database = os.getenv(f"{prefix}DB_NAME", "phones")
     user = os.getenv(f"{prefix}DB_USER", "root")
-    password = os.getenv(f"{prefix}DB_PASSWORD", "silentknight").strip()
-    print ("pass: " + password)
-    driver = os.getenv(f"{prefix}DB_DRIVER", "pymysql")
+    password = os.getenv(f"{prefix}DB_PASSWORD", "badpass").strip()
+    driver = os.getenv(f"{prefix}DB_DRIVER", "pyodbc")
     query = {"charset": os.getenv(f"{prefix}DB_CHARSET", "utf8mb4")}
     # driver = 'mariadbconnector'
+    if driver == "pyodbc":
+        return str(f"mysql+pyodbc://{user}:{password}@{server}")
     connection_string = URL.create(
         f"mysql+{driver}",
         username=user or None,
@@ -49,8 +50,7 @@ def _build_mysql_url_from_env(prefix: str = "") -> str:
         database=database,
         # query=query,
     )
-    print(str(connection_string))
-    return str("mysql+pyodbc://test_user:asdf@pbx1")
+    # print(str(connection_string))
     return str(connection_string)
 
 
