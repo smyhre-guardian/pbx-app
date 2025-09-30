@@ -1,9 +1,8 @@
-
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 
 const routes = [
-    { path: '/', component: Home },
+    { path: '/', redirect: '/port-status' },
     { path: '/about', component: () => import('../views/About.vue') },
     { path: '/call-records', component: () => import('../views/CallRecords.vue') },
     { path: '/phone-lookup', component: () => import('../views/PhoneLookup.vue') },

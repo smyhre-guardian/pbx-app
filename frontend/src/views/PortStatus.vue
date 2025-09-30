@@ -107,7 +107,7 @@ export default {
       if (this.setLoading) this.setLoading(true);
 
       try {
-        const baseUrl = import.meta.env.API_URL;
+        const baseUrl = import.meta.env.VITE_API_URL;
         const response = await fetch(`${baseUrl}/port_status`);
         this.portStatus = await response.json();
         this.portStatus.forEach(port => {
@@ -131,7 +131,7 @@ export default {
     async saveEdit(port, field) {
       try {
         const updatedValue = port.editableValues[field];
-        const baseUrl = import.meta.env.API_URL;
+        const baseUrl = import.meta.env.VITE_API_URL;
         const response = await fetch(`${baseUrl}/port_status/${port.TN}`, {
           method: 'PUT',
           headers: {
