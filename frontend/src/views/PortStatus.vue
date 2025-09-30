@@ -2,6 +2,34 @@
   <div class="port-status">
     <h1>Port Status</h1>
     <p>Test Numbers: 425.501.7838 | 206.467.5062</p>
+
+    <!-- Radio Buttons for Filters -->
+    <div class="filters">
+        <div>
+            <label>
+                <input type="radio" value="include" v-model="elevatorFilter" /> Include Elevators
+            </label>
+            <label>
+                <input type="radio" value="only" v-model="elevatorFilter" /> Only Elevators
+            </label>
+            <label>
+                <input type="radio" value="exclude" v-model="elevatorFilter" /> Exclude Elevators
+            </label>
+      </div>
+
+      <div>
+        <label>
+            <input type="radio" value="include" v-model="receiverFilter" /> Include Receivers
+        </label>
+        <label>
+            <input type="radio" value="only" v-model="receiverFilter" /> Only Receivers
+        </label>
+        <label>
+            <input type="radio" value="exclude" v-model="receiverFilter" /> Exclude Receivers
+        </label>
+      </div>
+    </div>
+
     <div class="port-status-grid">
       <table>
         <thead>
@@ -30,7 +58,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="port in portStatus" :key="port.TN" :class="{ pending: port.is_pending, loading: isLoading, testNeeded: rcvrTestNeeded(port), elevTestNeeded: elevTestNeeded(port) }">
+          <tr v-for="port in filteredPortStatus" :key="port.TN" :class="{ pending: port.is_pending, loading: isLoading, testNeeded: rcvrTestNeeded(port), elevTestNeeded: elevTestNeeded(port) }">
             <td :title="port.TN">
               <a :href="`tel:91${port.TN}`" @click="pending(port)">{{ port.TN }}</a>
             </td>
@@ -104,7 +132,25 @@ export default {
       setLoading: null,
       setRefreshCallback: null,
       currentlyEditing: null,
+      elevatorFilter: 'include',
+      receiverFilter: 'include',
     };
+  },
+  computed: {
+    filteredPortStatus() {
+      return this.portStatus.filter(port => {
+        if (this.elevatorFilter === 'exclude' && this.isElev(port)
+            || this.elevatorFilter === 'only' && !this.isElev(port)) {
+            return false;
+        }
+        if (this.receiverFilter === 'exclude' && this.isRcvr(port)
+            || this.receiverFilter === 'only' && !this.isRcvr(port)
+        ) {
+            return false;
+        }
+        return true;
+      });
+    }
   },
   methods: {
     async fetchPortStatus() {
@@ -172,7 +218,10 @@ export default {
       return port.usage.toLowerCase().indexOf('rcvr') !== -1 && (!port.call_count || port.call_count < 1) && (!port.test_count || port.test_count < 1);
     },
     isElev(port) {
-      return port.usage.toLowerCase().indexOf('elev') !== -1;
+      return port.usage.toLowerCase().indexOf('elev') !== -1 || port.notes.toLowerCase().indexOf('elev') !== -1;
+    },
+    isRcvr(port) {
+      return port.usage.toLowerCase().indexOf('rcvr') !== -1;
     },
     elevTestNeeded(port) {
       return port.usage.toLowerCase().indexOf('elev') !== -1 && (!port.call_count || port.call_count < 1) && (!port.test_count || port.test_count < 1);
@@ -373,5 +422,11 @@ td.inactive {
 }
 td.different {
     color: #fe9524
+}
+.filters {
+  margin-bottom: 20px;
+}
+.filters label {
+  margin-right: 15px;
 }
 </style>
