@@ -1,7 +1,4 @@
 from time import sleep
-from dotenv import load_dotenv
-load_dotenv()
-
 from typing import Optional, List, Any, cast
 import os
 from sqlmodel import SQLModel, Session, select, create_engine, col

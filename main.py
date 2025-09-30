@@ -6,6 +6,9 @@ from storage import storage_instance, cdr_storage, port_status_storage
 from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import HTTPException, Body
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 @asynccontextmanager
