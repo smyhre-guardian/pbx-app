@@ -17,18 +17,24 @@ def _build_mssql_url_from_env(prefix: str = "") -> str:
     driver = os.getenv(f"{prefix}ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
     username = os.getenv(f"{prefix}DB_USER", "").strip()
     password = os.getenv(f"{prefix}DB_PASSWORD", "").strip()
+    query = {
+        "driver": driver,
+        "TrustServerCertificate": "yes",
+        "Encrypt": "yes",
+    }
+    if ( username == "" ):
+        query["Trusted_Connection"] = "yes"
+    else:
+        query["UID"] = username
+        query["PWD"] = password
     connection_string = URL.create(
         "mssql+pyodbc",
-        username=username if username != "" else None,
-        password=password if password != "" else None,
         host=server,
+        port=1433,
         database=database,
-        query={
-            "driver": driver,
-            "Trusted_Connection": "yes",
-            "Encrypt": "no",
-        },
+        query=query,
     )
+    print (connection_string)
     return str(connection_string)
 
 def _build_mysql_url_from_env(prefix: str = "") -> str:
