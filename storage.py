@@ -25,7 +25,7 @@ def _build_mssql_url_from_env(prefix: str = "") -> str:
         database=database,
         query={
             "driver": driver,
-            "Trusted_Connection": "yes" if username == "" else "no",
+            "Trusted_Connection": "yes",
             "Encrypt": "no",
         },
     )
