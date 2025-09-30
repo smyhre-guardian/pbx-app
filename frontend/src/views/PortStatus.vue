@@ -23,6 +23,8 @@
             <th class="sortable" @click="sortTable('LastHour')">LastHour</th>
             <th class="sortable" @click="sortTable('last_cid')">LastCID</th>
             <th class="sortable" @click="sortTable('avg_dur')">Avg Duration</th>
+            <th class="sortable" @click="sortTable('elevator_acct')">Elevator Acct</th>
+            <th class="sortable" @click="sortTable('acct_status')">Acct Status</th>
           </tr>
         </thead>
         <tbody>
@@ -63,7 +65,7 @@
               </template>
             </td>
             <td>{{ port.order_num }}</td>
-            <td>{{ formatDate(port.port_date) }}</td>
+            <td :title="'last updated: ' + formatDate(port.updated_at)">{{ formatDate(port.port_date) }}</td>
             <td>{{ port.pbx_dst }}</td>
             <td :title="port.last_call">{{ getRelativeTime(port.last_call) }}</td>
             <td>{{ port.call_count }}</td>
@@ -74,6 +76,8 @@
             <td>{{ formatHr(port.LastHour) }}</td>
             <td>{{ port.last_cid }}</td>
             <td>{{ formatDuration(port.avg_dur) }}</td>
+            <td :class="{'inactive': ! port.acct_status || port.acct_status[0] !== 'A'}">{{ port.elevator_acct }}</td>
+            <td>{{ port.acct_status }}</td>
           </tr>
         </tbody>
       </table>
@@ -141,6 +145,7 @@ export default {
         port[field] = updatedValue;
       } catch (error) {
         console.error('Error saving data:', error);
+        port.editableValues[field] = port[field]; // Revert to original value on error
       } finally {
         this.currentlyEditing = null;
       }
@@ -347,5 +352,8 @@ tr.elevTestNeeded {
 }
 td.badDNIS {
     background: #fe9524;
+}
+td.inactive {
+    color: red;
 }
 </style>

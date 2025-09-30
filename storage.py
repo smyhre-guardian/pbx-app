@@ -255,7 +255,7 @@ class PortStatusStorage:
             query = text("""
                 SELECT TN, ring_to, DNIS, usage, notes, order_num, 
                        port_date, pbx_dst, last_call, call_count, last_tested,
-                       test_count, avg_dur, rcvr_prefix, last_cs_no, LastHour, last_cid
+                       test_count, avg_dur, rcvr_prefix, last_cs_no, LastHour, last_cid, elevator_acct, acct_status, updated_at
                 FROM vPortStatus
                 ORDER BY TN
             """)
