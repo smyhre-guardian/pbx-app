@@ -8,6 +8,9 @@
     </form>
     <div v-if="loading">Loading...</div>
     <div v-if="error" class="error">{{ error }}</div>
+    <a v-if="results.length" style="margin-top: 20px;" :href="'/call-records?q=' + phone">
+      View CDRs for {{ phone }}
+    </a>
     <table v-if="results.length">
       <thead>
         <tr>
@@ -19,7 +22,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in results" :key="row.cs_no + row.phone">
+        <tr v-for="row in results" :key="row.cs_no + row.last_day">
           <td>{{ row.cs_no }}</td>
           <td>{{ row.cnt }}</td>
           <td>{{ row.phone }}</td>
@@ -46,6 +49,11 @@ export default {
     };
   },
   mounted() {
+    const queryPhone = this.$route.query.phone;
+    if (queryPhone) {
+      this.phone = queryPhone;
+      this.doLookup();
+    }
     this.$refs.search.focus();
   },
   methods: {
@@ -56,6 +64,10 @@ export default {
       var stripped = this.phone.replace(/\D/g, '');
       stripped = stripped.slice(-10);
       this.phone = stripped;
+
+      // Update the query string with the phone number
+      this.$router.push({ path: this.$route.path, query: { phone: stripped } });
+
       try {
         const resp = await fetch(`${baseUrl}/phone_lookup?phone=${encodeURIComponent(stripped)}`);
         if (!resp.ok) throw new Error("API error: " + resp.status);

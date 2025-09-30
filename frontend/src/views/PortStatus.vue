@@ -16,7 +16,7 @@
             <th class="sortable" @click="sortTable('pbx_dst')">PBX Destination</th>
             <th class="sortable" @click="sortTable('last_call')">Last Call</th>
             <th class="sortable" @click="sortTable('call_count')">Call Count</th>
-            <th class="sortable" @click="sortTable('last_call')">Last Tested</th>
+            <th class="sortable" @click="sortTable('last_tested')">Last Tested</th>
             <th class="sortable" @click="sortTable('test_count')">Test Count</th>
             <th class="sortable" @click="sortTable('rcvr_prefix')">RCVR Prefix</th>
             <th class="sortable" @click="sortTable('last_cs_no')">Last CS#</th>
@@ -25,59 +25,63 @@
             <th class="sortable" @click="sortTable('avg_dur')">Avg Duration</th>
             <th class="sortable" @click="sortTable('elevator_acct')">Elevator Acct</th>
             <th class="sortable" @click="sortTable('acct_status')">Acct Status</th>
+            <th class="sortable" @click="sortTable('lumen_name')">Lumen Desc</th>
+            <th class="sortable" @click="sortTable('lumen_point_to')">Lumen Point To</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="port in portStatus" :key="port.TN" :class="{ pending: port.is_pending, loading: isLoading, testNeeded: rcvrTestNeeded(port), elevTestNeeded: elevTestNeeded(port) }">
-            <td>
+            <td :title="port.TN">
               <a :href="`tel:91${port.TN}`" @click="pending(port)">{{ port.TN }}</a>
             </td>
-            <td @dblclick="enableEditing(port, 'ring_to')">
+            <td :title="port.ring_to" @dblclick="enableEditing(port, 'ring_to')">
               <template v-if="isEditing(port, 'ring_to')">
-                <input v-model="port.editableValues.ring_to" @blur="saveEdit(port, 'ring_to')" @keyup.enter="saveEdit(port, 'ring_to')" />
+                <input v-model="port.editableValues.ring_to" @blur="saveEdit(port, 'ring_to')" />
               </template>
               <template v-else>
                 {{ port.ring_to }}
               </template>
             </td>
-            <td @dblclick="enableEditing(port, 'DNIS')" :class="{ 'badDNIS': isBadDNIS(port) }">
+            <td :title="port.DNIS" @dblclick="enableEditing(port, 'DNIS')" :class="{ 'badDNIS': isBadDNIS(port) }">
               <template v-if="isEditing(port, 'DNIS')">
-                <input v-model="port.editableValues.DNIS" @blur="saveEdit(port, 'DNIS')" @keyup.enter="saveEdit(port, 'DNIS')" />
+                <input v-model="port.editableValues.DNIS" @blur="saveEdit(port, 'DNIS')" />
               </template>
               <template v-else>
                 {{ port.DNIS }}
               </template>
             </td>
-            <td @dblclick="enableEditing(port, 'usage')">
+            <td :title="port.usage" @dblclick="enableEditing(port, 'usage')">
               <template v-if="isEditing(port, 'usage')">
-                <input v-model="port.editableValues.usage" @blur="saveEdit(port, 'usage')" @keyup.enter="saveEdit(port, 'usage')" />
+                <input v-model="port.editableValues.usage" @blur="saveEdit(port, 'usage')" />
               </template>
               <template v-else>
                 {{ port.usage }}
               </template>
             </td>
-            <td class="notes" @dblclick="enableEditing(port, 'notes')">
+            <td class="notes" :title="port.notes" @dblclick="enableEditing(port, 'notes')">
               <template v-if="isEditing(port, 'notes')">
-                <input v-model="port.editableValues.notes" @blur="saveEdit(port, 'notes')" @keyup.enter="saveEdit(port, 'notes')" />
+                <input v-model="port.editableValues.notes" @blur="saveEdit(port, 'notes')" />
               </template>
               <template v-else>
                 {{ port.notes }}
               </template>
             </td>
-            <td>{{ port.order_num }}</td>
-            <td :title="'last updated: ' + formatDate(port.updated_at)">{{ formatDate(port.port_date) }}</td>
-            <td>{{ port.pbx_dst }}</td>
+            <td :title="port.order_num">{{ port.order_num }}</td>
+            <td :title="'last updated: ' + formatDate(port.last_updated)">{{ formatDate(port.port_date) }}</td>
+            <td :title="port.pbx_dst">{{ port.pbx_dst }}</td>
             <td :title="port.last_call">{{ getRelativeTime(port.last_call) }}</td>
-            <td>{{ port.call_count }}</td>
+            <td :title="port.call_count">{{ port.call_count }}</td>
             <td :title="port.last_tested">{{ getRelativeTime(port.last_tested) }}</td>
             <td>{{ port.test_count }}</td>
             <td>{{ port.rcvr_prefix }}</td>
-            <td>{{ port.last_cs_no }}</td>
-            <td>{{ formatHr(port.LastHour) }}</td>
-            <td>{{ port.last_cid }}</td>
-            <td>{{ formatDuration(port.avg_dur) }}</td>
-            <td :class="{'inactive': ! port.acct_status || port.acct_status[0] !== 'A'}">{{ port.elevator_acct }}</td>
-            <td>{{ port.acct_status }}</td>
+            <td :title="port.last_cs_no">{{ port.last_cs_no }}</td>
+            <td :title="port.LastHour">{{ port.LastHour }}</td>
+             <td><a v-if="port.last_cid" :href="'/phone-lookup?phone=' + port.last_cid" target="_blank">{{ port.last_cid }}</a><span v-else>{{ port.last_cid }}</span></td>
+            <td :title="formatDuration(port.avg_dur)">{{ formatDuration(port.avg_dur) }}</td>
+            <td :title="port.elevator_acct" :class="{'inactive': ! port.acct_status || port.acct_status[0] !== 'A'}">{{ port.elevator_acct }}</td>
+            <td :title="port.acct_status">{{ port.acct_status }}</td>
+            <td :title="port.lumen_name">{{ port.lumen_name }}</td>
+            <td :class="{'different': !sameLast4(port.lumen_point_to, port.TN.toString(), isElev(port)) && !sameLast4(port.lumen_point_to, port.ring_to, isElev(port))}">{{ port.lumen_point_to }}</td>
           </tr>
         </tbody>
       </table>
@@ -167,6 +171,9 @@ export default {
     rcvrTestNeeded(port) {
       return port.usage.toLowerCase().indexOf('rcvr') !== -1 && (!port.call_count || port.call_count < 1) && (!port.test_count || port.test_count < 1);
     },
+    isElev(port) {
+      return port.usage.toLowerCase().indexOf('elev') !== -1;
+    },
     elevTestNeeded(port) {
       return port.usage.toLowerCase().indexOf('elev') !== -1 && (!port.call_count || port.call_count < 1) && (!port.test_count || port.test_count < 1);
     },
@@ -174,8 +181,12 @@ export default {
       if (!port.DNIS) return false;
       const dnis = port.DNIS.trim();
       if (!port.ring_to || port.ring_to.length < 10) return false;
-      console.log('Comparing', port.ring_to.slice(-4), 'to', dnis);
       return port.ring_to.slice(-4) !== dnis;
+    },
+    sameLast4(a, b, isElev = false) {
+      if (!a || !b || a.length < 4 || b.length < 4) return false;
+      var len = isElev ? -3 : -4;
+      return a.trim().slice(len) === b.trim().slice(len);
     },
     formatDate(dateString) {
       if (!dateString) return '';
@@ -215,7 +226,8 @@ export default {
           return this.sortAsc ? valA - valB : valB - valA;
         }
         // Date sort for date columns
-        if (column === 'port_date' || column === 'last_call') {
+        if (column === 'port_date' || column === 'last_call' || column === 'last_tested') {
+            if (!valA || !valB) return valA ? -1 : 1;
           return this.sortAsc
             ? new Date(valA) - new Date(valB)
             : new Date(valB) - new Date(valA);
@@ -302,6 +314,9 @@ th, td {
 
 th {
   background-color: #f5f5f5;
+  position: sticky;
+  top: 50px;
+  z-index: 1;
 }
 
 tr:hover {
@@ -315,15 +330,13 @@ td {
   max-width: 200px;
 }
 
-td:nth-child(5) { /* Notes column */
-  max-width: 300px;
-  white-space: normal;
-}
 tr.pending {
     background: yellow;
 }
 td.notes {
     font-size: 10px;
+    max-width: 300px;
+    white-space: normal;
 }
 .refresh-button {
   margin-bottom: 10px;
@@ -357,5 +370,8 @@ td.badDNIS {
 }
 td.inactive {
     color: red;
+}
+td.different {
+    color: #fe9524
 }
 </style>

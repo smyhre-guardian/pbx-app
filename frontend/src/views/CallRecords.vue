@@ -10,9 +10,13 @@
         <button @click="loadRecords">Search</button>
       </div>
 
+      <div v-if="records.length">
+        {{  records.length }} records found.
+      </div>
       <table class="records">
         <thead>
           <tr>
+            <th>PBX</th>
             <th>Date</th>
             <th>Caller</th>
             <th>Original DNIS</th>
@@ -28,6 +32,7 @@
         <tbody>
           <tr v-if="records.length === 0"><td colspan="5">No records</td></tr>
           <tr v-for="r in records" :key="r.id">
+            <td>{{ r.pbx.replace('SVR', '') }}</td>
             <td>{{ fmtDate(r.calldate) }}</td>
             <td>{{ fmtNumber(r.caller) }}</td>
             <td>{{ r.orig_dnis }}</td>
@@ -53,6 +58,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -60,7 +66,9 @@ const status = ref('')
 const records = ref([])
 const q = ref('')
 const page = ref(1)
-const pageSize = 25
+const pageSize = 10
+const router = useRouter()
+const route = useRoute()
 
 function showStatus(msg = '') { status.value = msg }
 
@@ -95,6 +103,11 @@ async function loadRecords() {
     params.set('q', q.value || '')
     params.set('page', String(page.value))
     params.set('page_size', String(pageSize))
+
+    // Update the query string in the URL
+    const newQuery = { ...Object.fromEntries(params.entries()) };
+    router.push({ path: router.currentRoute.value.path, query: newQuery });
+
     const res = await fetch(`${baseUrl}/call_records?` + params.toString())
     if (!res.ok) throw new Error(`Failed: ${res.status}`)
     records.value = await res.json()
@@ -103,6 +116,12 @@ async function loadRecords() {
     showStatus('Could not load call records — is the API running?')
     console.error(err)
   }
+}
+
+// Check for query parameter on initial load
+const queryQ = router.currentRoute.value.query.q;
+if (queryQ) {
+  q.value = queryQ;
 }
 
 function nextPage() { page.value++; loadRecords() }

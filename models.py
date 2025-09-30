@@ -70,6 +70,7 @@ class CdrBase(SQLModel):
     use zero-dates are represented as Optional where appropriate to avoid parsing
     errors when reading legacy rows.
     """
+    PBX: str = Field(default='', max_length=45)
     calldate: Optional[datetime] = Field(default=None)
     clid: str = Field(default='', max_length=80)
     src: str = Field(default='', max_length=80)

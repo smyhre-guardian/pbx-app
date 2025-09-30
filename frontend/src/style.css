@@ -35,6 +35,10 @@ form label {
     font-size: 0.95em;
 }
 
+input {
+    padding: 0.5em;
+}
+
 input[name=number],
 input[name=point_to] {
     padding: 8px 10px;

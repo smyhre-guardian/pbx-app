@@ -112,7 +112,7 @@ class DwStorage:
 
     def lookup_phone(self, number: str) -> Optional[vPhoneLookup]:
         with engine_dw.connect() as conn:
-            result = conn.execute(text("SELECT cs_no, cnt, phone, first_day, last_day FROM vPhoneLookup WHERE phone = :phone ORDER BY cnt desc"), {"phone": number})
+            result = conn.execute(text("SELECT cs_no, cnt, phone, first_day, last_day FROM vPhoneLookup WHERE phone = :phone ORDER BY cnt desc, last_day desc"), {"phone": number})
             rows = result.fetchall()
             if rows:
                 row = rows[0]
@@ -207,6 +207,7 @@ class CdrStorage:
                 lookup = DwStorage().lookup_phone(num)
                 out.append({
                     "id": cdr.id,
+                    "pbx": getattr(cdr, "PBX", None),
                     "caller": getattr(cdr, "src", None),
                     "callee": getattr(cdr, "dst", None),
                     "calldate": calldate.isoformat() if calldate else None,
@@ -260,7 +261,8 @@ class PortStatusStorage:
             query = text("""
                 SELECT TN, ring_to, DNIS, usage, notes, order_num, 
                        port_date, pbx_dst, last_call, call_count, last_tested,
-                       test_count, avg_dur, rcvr_prefix, last_cs_no, LastHour, last_cid, elevator_acct, acct_status, updated_at
+                       test_count, avg_dur, rcvr_prefix, last_cs_no, LastHour, last_cid, 
+                        elevator_acct, acct_status, updated_at, lumen_name, lumen_point_to
                 FROM vPortStatus
                 ORDER BY TN
             """)

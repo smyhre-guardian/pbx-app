@@ -134,7 +134,7 @@ def phone_lookup(phone: str):
     from storage import engine_dw
     from sqlalchemy import text
     with engine_dw.connect() as conn:
-        query = text("SELECT cs_no, cnt, phone, first_day, last_day FROM vPhoneLookup WHERE phone = :phone")
+        query = text("SELECT cs_no, cnt, phone, first_day, last_day FROM vPhoneLookup WHERE phone = :phone ORDER BY cnt DESC, last_day DESC")
         rows = conn.execute(query, {"phone": phone}).fetchall()
         for row in rows:
             results.append({"cs_no": row[0], "cnt": row[1], "phone": row[2], "first_day": row[3], "last_day": row[4]})
