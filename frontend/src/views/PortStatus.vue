@@ -107,7 +107,8 @@ export default {
       if (this.setLoading) this.setLoading(true);
 
       try {
-        const response = await fetch('http://localhost:8000/port_status');
+        const baseUrl = import.meta.env.API_URL;
+        const response = await fetch(`${baseUrl}/port_status`);
         this.portStatus = await response.json();
         this.portStatus.forEach(port => {
           port.editableValues = { ...port };
@@ -130,7 +131,8 @@ export default {
     async saveEdit(port, field) {
       try {
         const updatedValue = port.editableValues[field];
-        const response = await fetch(`http://localhost:8000/port_status/${port.TN}`, {
+        const baseUrl = import.meta.env.API_URL;
+        const response = await fetch(`${baseUrl}/port_status/${port.TN}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
