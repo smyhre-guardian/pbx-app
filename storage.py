@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Optional, List, Any, cast
+from typing import Optional, List, Any, Union, cast
 import os
 from sqlmodel import SQLModel, Session, select, create_engine, col
 from models import LumenDw, PhoneNumber, Lumen, Cdr, vPhoneLookup, PortStatus
@@ -7,13 +7,13 @@ from datetime import datetime
 from sqlalchemy import desc, text
 from sqlalchemy.engine import URL
 
-def _build_mssql_url_from_env(prefix: str = "") -> str:
+def _build_mssql_url_from_env(prefix: str = "") -> Union[str,URL]:
     # prefix allows APP_ or CDR_ env vars; default to no prefix
     server = os.getenv(f"{prefix}DB_SERVER", "nwa10")
     database = os.getenv(f"{prefix}DB_NAME", "DashboardTest")
     driver = os.getenv(f"{prefix}ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
-    username = os.getenv(f"{prefix}DB_USER", "").strip()
-    password = os.getenv(f"{prefix}DB_PASSWORD", "").strip()
+    username = os.getenv(f"{prefix}DB_USER", "")
+    password = os.getenv(f"{prefix}DB_PASSWORD", "")
     query = {
         "driver": driver,
         "TrustServerCertificate": "yes",
@@ -32,9 +32,9 @@ def _build_mssql_url_from_env(prefix: str = "") -> str:
         query=query,
     )
     print (connection_string)
-    return str(connection_string)
+    return connection_string
 
-def _build_mysql_url_from_env(prefix: str = "") -> str:
+def _build_mysql_url_from_env(prefix: str = "") -> Union[str,URL]:
     server = os.getenv(f"{prefix}DB_SERVER", "127.0.0.1")
     print ("server: " + server)
     port = os.getenv(f"{prefix}DB_PORT", "")
@@ -56,10 +56,10 @@ def _build_mysql_url_from_env(prefix: str = "") -> str:
         # query=query,
     )
     # print(str(connection_string))
-    return str(connection_string)
+    return connection_string
 
 
-def get_database_url(role: str = "app") -> str:
+def get_database_url(role: str = "app") -> Union[str,URL]:
     """Return a database URL for the given role.
 
     Priority:
