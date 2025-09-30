@@ -17,11 +17,12 @@ def _build_mssql_url_from_env(prefix: str = "") -> Union[str,URL]:
     query = {
         "driver": driver,
         "TrustServerCertificate": "yes",
-        "Encrypt": "yes",
+        "Encrypt": "yes"
     }
     if ( username == "" ):
         query["Trusted_Connection"] = "yes"
     else:
+        query["authentication"] = "SqlPassword"
         query["UID"] = username
         query["PWD"] = password
     connection_string = URL.create(
