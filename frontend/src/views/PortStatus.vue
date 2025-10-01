@@ -41,6 +41,9 @@
       </div>
     </div>
 
+    <div>
+        <p>{{ filteredPortStatus.length }} Numbers </p>
+    </div>
     <div class="port-status-grid">
       <table>
         <thead>
