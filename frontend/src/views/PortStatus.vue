@@ -30,6 +30,17 @@
       </div>
     </div>
 
+    <!-- Modal for RCVR Prefixes -->
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal">
+        <h2>RCVR Prefixes</h2>
+        <ul>
+          <li v-for="prefix in rcvrPrefixes" :key="prefix.conditional">{{ prefix.conditional }}</li>
+        </ul>
+        <button @click="closeModal">Close</button>
+      </div>
+    </div>
+
     <div class="port-status-grid">
       <table>
         <thead>
@@ -78,7 +89,7 @@
                 {{ port.DNIS }}
               </template>
             </td>
-            <td :title="port.usage" @dblclick="enableEditing(port, 'usage')">
+            <td :title="port.usage" @dblclick="enableEditing(port, 'usage')" @click="checkRcvrUsage(port)">
               <template v-if="isEditing(port, 'usage')">
                 <input v-model="port.editableValues.usage" @blur="saveEdit(port, 'usage')" />
               </template>
@@ -100,8 +111,10 @@
             <td :title="port.last_call">{{ getRelativeTime(port.last_call) }}</td>
             <td :title="port.call_count">{{ port.call_count }}</td>
             <td :title="port.last_tested">{{ getRelativeTime(port.last_tested) }}</td>
-            <td>{{ port.test_count }}</td>
-            <td>{{ port.rcvr_prefix }}</td>
+            <td :title="port.test_count">{{ port.test_count }}</td>
+            <td :title="port.rcvr_prefix">
+              <span @click="openModal(port.rcvr_prefix)">{{ port.rcvr_prefix }}</span>
+            </td>
             <td :title="port.last_cs_no">{{ port.last_cs_no }}</td>
             <td :title="port.LastHour">{{ port.LastHour }}</td>
              <td><a v-if="port.last_cid" :href="'/phone-lookup?phone=' + port.last_cid" target="_blank">{{ port.last_cid }}</a><span v-else>{{ port.last_cid }}</span></td>
@@ -134,6 +147,9 @@ export default {
       currentlyEditing: null,
       elevatorFilter: 'include',
       receiverFilter: 'include',
+      rcvrPrefixes: [],
+      showModal: false,
+      selectedRcvrPrefixes: []
     };
   },
   computed: {
@@ -170,6 +186,17 @@ export default {
         console.error('Error fetching port status:', error);
       } finally {
         if (this.setLoading) this.setLoading(false);
+      }
+    },
+    async fetchRcvrPrefixes(prefix) {
+      try {
+        const baseUrl = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${baseUrl}/rcvr_prefix/${prefix}`);
+        const data = await response.json();
+        this.rcvrPrefixes = data;
+        
+      } catch (error) {
+        console.error('Error fetching receiver prefixes:', error);
       }
     },
     enableEditing(port, field) {
@@ -320,6 +347,20 @@ export default {
     },
     refreshData() {
       this.fetchPortStatus();
+    },
+    async openModal(prefix) {
+      await this.fetchRcvrPrefixes(prefix);
+    //   this.selectedRcvrPrefixes = prefixes.split(',');
+      this.showModal = true;
+    },
+    closeModal() {
+      this.showModal = false;
+      this.selectedRcvrPrefixes = [];
+    },
+    checkRcvrUsage(port) {
+      if (this.isRcvr(port)) {
+        this.openModal(port.usage.replace(/[^0-9]/g, ''));
+      }
     }
   },
   created() {
@@ -428,5 +469,29 @@ td.different {
 }
 .filters label {
   margin-right: 15px;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+}
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+.modal h2 {
+  margin-top: 0;
+}
+.modal button {
+  margin-top: 20px;
 }
 </style>

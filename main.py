@@ -55,6 +55,9 @@ def list_port_status():
     """Get the status of all ports from the phone system"""
     return port_status_storage.list_all()
 
+@app.get("/rcvr_prefix/{prefix}")
+def get_rcvr_prefixes(prefix: str):
+    return port_status_storage.get_rcvr_prefixes(prefix)
 
 @app.get("/phone_numbers/{item_id}", response_model=PhoneNumber)
 def get_phone(item_id: int):

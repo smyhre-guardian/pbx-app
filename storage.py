@@ -279,6 +279,14 @@ class PortStatusStorage:
             result = session.execute(query, params)
             session.commit()
             return True
+        
+    def get_rcvr_prefixes(self, prefix):
+        with Session(engine_dw) as session:
+            query = text("SELECT * FROM vRcvrPrefix WHERE replacement = :prefix")
+            params = {"prefix": prefix}
+            result = session.execute(query, params)
+            prefixes = [dict(row._mapping) for row in result]
+            return prefixes;
 
 # Instances
 storage_instance = AppStorage()  # backward-compatible name used across the codebase
