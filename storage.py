@@ -260,10 +260,7 @@ class PortStatusStorage:
     def list_all(self):
         with Session(engine_dw) as session:
             query = text("""
-                SELECT TN, ring_to, DNIS, usage, notes, order_num, 
-                       port_date, pbx_dst, last_call, call_count, last_tested,
-                       test_count, avg_dur, rcvr_prefix, last_cs_no, LastHour, last_cid, 
-                        elevator_acct, acct_status, updated_at, lumen_name, lumen_point_to
+                SELECT *
                 FROM vPortStatus
                 ORDER BY TN
             """)

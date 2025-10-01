@@ -116,13 +116,13 @@
               <span @click="openModal(port.rcvr_prefix)">{{ port.rcvr_prefix }}</span>
             </td>
             <td :title="port.last_cs_no">{{ port.last_cs_no }}</td>
-            <td :title="port.LastHour">{{ port.LastHour }}</td>
+            <td :title="port.LastHour">{{ formatHr(port.LastHour) }}</td>
              <td><a v-if="port.last_cid" :href="'/phone-lookup?phone=' + port.last_cid" target="_blank">{{ port.last_cid }}</a><span v-else>{{ port.last_cid }}</span></td>
             <td :title="formatDuration(port.avg_dur)">{{ formatDuration(port.avg_dur) }}</td>
             <td :title="port.elevator_acct" :class="{'inactive': ! port.acct_status || port.acct_status[0] !== 'A'}">{{ port.elevator_acct }}</td>
             <td :title="port.acct_status">{{ port.acct_status }}</td>
             <td :title="port.lumen_name">{{ port.lumen_name }}</td>
-            <td :class="{'different': !sameLast4(port.lumen_point_to, port.TN.toString(), isElev(port)) && !sameLast4(port.lumen_point_to, port.ring_to, isElev(port))}">{{ port.lumen_point_to }}</td>
+            <td :title="port.lumen_rcvr ? 'rcvr prefix: ' + port.lumen_rcvr : '<no prefix found>'" :class="{'different': !sameLast4(port.lumen_point_to, port.TN.toString(), isElev(port)) && !sameLast4(port.lumen_point_to, port.ring_to, isElev(port))}">{{ port.lumen_point_to }}</td>
           </tr>
         </tbody>
       </table>
