@@ -196,7 +196,7 @@ class CdrStorage:
                     (Cdr.__table__.c.src.like(f"%{ql}%")) |
                     (Cdr.__table__.c.dst.like(f"%{ql}%")) |
                     (Cdr.__table__.c.clid.like(f"%{ql}%")) |
-                    (Cdr.__table__.c.uniqueid.like(f"%{ql}%"))
+                    (Cdr.__table__.c.orig_dnis.like(f"%{ql}%"))
                 )
             stmt = stmt.order_by(desc(col)).limit(limit)
             results = session.exec(stmt).all()

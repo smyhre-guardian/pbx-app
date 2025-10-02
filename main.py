@@ -32,6 +32,14 @@ app.add_middleware(
 def read_root():
     return {"message": "Phone List API"}
 
+@app.get("/git-pull", summary="Pull latest code from git")
+def git_pull():
+    import subprocess
+    try:
+        result = subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
+        return {"stdout": result.stdout, "stderr": result.stderr}
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Git pull failed: {e.stderr}")
 
 @app.post("/phone_numbers", response_model=PhoneNumber, status_code=201)
 def create_phone(payload: PhoneNumberCreate):
