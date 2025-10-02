@@ -3,6 +3,16 @@
     <h1>Port Status</h1>
     <p>Test Numbers: 425.501.7838 | 206.467.5062</p>
 
+    <!-- Search Box -->
+    <div class="search-box">
+      <input
+        type="text"
+        v-model="searchQuery"
+        placeholder="Search..."
+        @input="applySearch"
+      />
+    </div>
+
     <!-- Radio Buttons for Filters -->
     <div class="filters">
         <div>
@@ -74,7 +84,7 @@
         <tbody>
           <tr v-for="port in filteredPortStatus" :key="port.TN" :class="{ pending: port.is_pending, loading: isLoading, testNeeded: rcvrTestNeeded(port), elevTestNeeded: elevTestNeeded(port) }">
             <td :title="port.TN">
-              <a :href="`tel:91${port.TN}`" @click="pending(port)">{{ port.TN }}</a>
+              <a :href="`tel:91${port.TN}`" @click="pending(port)">{{ formatTN(port.TN) }}</a>
             </td>
             <td :title="port.ring_to" @dblclick="enableEditing(port, 'ring_to')">
               <template v-if="isEditing(port, 'ring_to')">
@@ -152,20 +162,31 @@ export default {
       receiverFilter: 'include',
       rcvrPrefixes: [],
       showModal: false,
-      selectedRcvrPrefixes: []
+      selectedRcvrPrefixes: [],
+      searchQuery: ''
     };
   },
   computed: {
     filteredPortStatus() {
       return this.portStatus.filter(port => {
-        if (this.elevatorFilter === 'exclude' && this.isElev(port)
-            || this.elevatorFilter === 'only' && !this.isElev(port)) {
-            return false;
-        }
-        if (this.receiverFilter === 'exclude' && this.isRcvr(port)
-            || this.receiverFilter === 'only' && !this.isRcvr(port)
+        const query = this.searchQuery.toLowerCase();
+        const matchesSearch = Object.values(port).some(value =>
+          String(value).toLowerCase().includes(query)
+        );
+
+        if (!matchesSearch) return false;
+
+        if (
+          (this.elevatorFilter === 'exclude' && this.isElev(port)) ||
+          (this.elevatorFilter === 'only' && !this.isElev(port))
         ) {
-            return false;
+          return false;
+        }
+        if (
+          (this.receiverFilter === 'exclude' && this.isRcvr(port)) ||
+          (this.receiverFilter === 'only' && !this.isRcvr(port))
+        ) {
+          return false;
         }
         return true;
       });
@@ -231,6 +252,9 @@ export default {
       } finally {
         this.currentlyEditing = null;
       }
+    },
+    formatTN(tn) {
+        return this.formatPhoneNumber(tn);
     },
     formatPhoneNumber(phone) {
       if (!phone) return '';
@@ -364,6 +388,10 @@ export default {
       if (this.isRcvr(port)) {
         this.openModal(port.usage.replace(/[^0-9]/g, ''));
       }
+    },
+    applySearch() {
+      // Triggered on input to update the filtered results
+      this.filteredPortStatus;
     }
   },
   created() {
@@ -496,5 +524,15 @@ td.different {
 }
 .modal button {
   margin-top: 20px;
+}
+.search-box {
+  margin-bottom: 20px;
+}
+.search-box input {
+  padding: 10px;
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 </style>
