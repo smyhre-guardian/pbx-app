@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
+
+from fastapi.responses import PlainTextResponse
 from models import PhoneNumber, PhoneNumberCreate, PhoneNumberUpdate
 from storage import storage_instance, cdr_storage, port_status_storage
 from contextlib import asynccontextmanager
@@ -160,7 +162,15 @@ def update_port_status(tn: str, payload: dict = Body(...)):
         raise HTTPException(status_code=404, detail="Port status entry not found")
     return updated
 
-
+@app.get("/pbx-diff/{pbx}", summary="Diff dialplan for PBX")
+def diff_pbx(pbx: str):
+    """Return a diff of the current dialplan for the specified PBX compared to the last saved version."""
+    from storage import get_pbx_diff
+    diff = get_pbx_diff(pbx)
+    if diff is None:
+        raise HTTPException(status_code=404, detail="PBX not found or no previous version to compare")
+    # return PlainTextResponse(diff)
+    return diff;
 
 if __name__ == "__main__":
     # Run with: python main.py

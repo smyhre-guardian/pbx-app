@@ -7,6 +7,8 @@ const routes = [
     { path: '/call-records', component: () => import('../views/CallRecords.vue') },
     { path: '/phone-lookup', component: () => import('../views/PhoneLookup.vue') },
     { path: '/port-status', component: () => import('../views/PortStatus.vue') },
+    { path: '/pbx-sync', component: () => import('../views/PbxSync.vue') },
+
 ]
 
 const router = createRouter({

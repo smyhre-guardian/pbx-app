@@ -5,6 +5,7 @@
         <router-link to="/port-status">Port Status</router-link>
         <router-link to="/call-records">Call Records</router-link>
         <router-link to="/phone-lookup">Phone Lookup</router-link>
+        <router-link to="/pbx-sync">PBX Sync</router-link>
         
       </div>
       <button @click="refresh" class="refresh-button" :disabled="isLoading">

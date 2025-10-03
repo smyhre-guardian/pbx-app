@@ -1,3 +1,4 @@
+import sys
 from time import sleep
 from typing import Optional, List, Any, Union, cast
 import os
@@ -9,6 +10,7 @@ from sqlalchemy.engine import URL
 
 def _build_mssql_url_from_env(prefix: str = "") -> Union[str,URL]:
     # prefix allows APP_ or CDR_ env vars; default to no prefix
+    print ("Building MSSQL URL from env with prefix: " + prefix)
     server = os.getenv(f"{prefix}DB_SERVER", "nwa10")
     database = os.getenv(f"{prefix}DB_NAME", "DashboardTest")
     driver = os.getenv(f"{prefix}ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
@@ -97,7 +99,6 @@ DATABASE_URL_DW = get_database_url("dw")
 engine_app = create_engine(DATABASE_URL_APP, echo=False)
 engine_cdr = create_engine(DATABASE_URL_CDR, echo=False)
 engine_dw = create_engine(DATABASE_URL_DW, echo=False)
-
 
 def create_db_and_tables_app():
     SQLModel.metadata.create_all(engine_app)
@@ -284,10 +285,106 @@ class PortStatusStorage:
             result = session.execute(query, params)
             prefixes = [dict(row._mapping) for row in result]
             return prefixes;
+    def get_asterisk_extensions(self):
+        with Session(engine_dw) as session:
+            query = text("SELECT * from vAsteriskExtensions")
+            result = session.execute(query)
+            extensions = [dict(row._mapping) for row in result]
+            return extensions;
+
+def get_pbx_diff(pbx: str) -> Optional[list[dict]]:
+    """Return a diff of the current dialplan for the specified PBX compared to the last saved version."""
+    s = PortStatusStorage()
+    current = s.get_asterisk_extensions()
+
+    etc_dir = os.getenv("ASTERISK_ETC_DIR", "/etc/asterisk/")
+    if not os.path.isdir(etc_dir):
+        return None
+    saved_file = os.path.join(etc_dir, f"extensions.conf")
+    if not os.path.isfile(saved_file):
+        return None
+    current.sort(key=lambda x: x.get("exten", ""))
+    current_lines = [row["exten"] for row in current if "exten" in row]
+
+    # assert False, current_lines
+    try:
+        import difflib
+        with open(saved_file, "r") as f_saved:
+            # Map the current extensions to lines using the "exten" field
+            
+            saved_lines = f_saved.readlines()
+            saved_lines = sorted([line.strip() for line in saved_lines if line.strip().startswith("exten") and not 'to_ivr' in line])
+            current_lines = sorted([line.strip() for line in current_lines if line.strip().startswith("exten")])
+            # current_lines = sorted([line.strip() for line in current_lines.splitlines() if line.strip()])
+
+            current_dict = {line[9:19]: line[36:] for line in current_lines}
+            saved_dict = {line[9:19]: line[36:] for line in saved_lines}
+
+            all_nums = sorted(set(current_dict.keys()).union(saved_dict.keys()))
+
+            left_out = []
+            right_out = []
+            out = []
+            for key in all_nums:
+                if not key.isdigit():
+                    continue
+                in_left = key in saved_dict;
+                in_right = key in current_dict;
+
+                is_match = in_left and in_right and (
+                    saved_dict[key].strip().split(';')[0].strip()
+                    == current_dict[key].strip().split(';')[0].strip()
+                )
+                out.append({
+                    "phn": key,
+                    "left": saved_dict.get(key, f"MISSING in old"),
+                    "right": current_dict.get(key, f"MISSING in new"),
+                    "left_full": saved_dict.get(key, ""),
+                    "right_full": current_dict.get(key, ""),
+                    "is_match": is_match,
+                    "is_new": in_right and not in_left
+                })
+                if key in saved_dict:
+                    left_out.append(saved_dict[key])
+                else:
+                    left_out.append(f"exten => {key},MISSING exten {key} in old")
+                if key in current_dict:
+                    right_out.append(current_dict[key])
+                else:
+                    right_out.append(f"exten => {key},MISSING exten {key} in new")
+                    
+            saved_txt = "\n".join(left_out)
+            current_txt = "\n".join(right_out)
+
+            with open(r"C:\\Temp\\saved.conf", "w", encoding="utf-8") as f:
+                f.write(saved_txt)
+
+            with open(r"C:\\Temp\\current.conf", "w", encoding="utf-8") as f:
+                f.write(current_txt)
+
+            return out
+
+            d = difflib.Differ()
+            return "\n".join(d.compare(left_out, right_out))
+
+            diff = difflib.unified_diff(
+                left_out,
+                right_out,
+                fromfile=f"saved/{pbx}_extensions.conf",
+                tofile=f"current/{pbx}_extensions.conf",
+                lineterm="\n"
+            )
+            diff_text = "\n".join(diff)
+            return diff_text if diff_text else None
+    except Exception as e:
+        print(f"Error generating diff:  {type(e).__name__} {e}", file=sys.stderr)
+        return None
 
 # Instances
 storage_instance = AppStorage()  # backward-compatible name used across the codebase
 app_storage = storage_instance
 cdr_storage = CdrStorage()
 port_status_storage = PortStatusStorage()
+
+
 
