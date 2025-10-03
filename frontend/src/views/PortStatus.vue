@@ -84,7 +84,7 @@
         <tbody>
           <tr v-for="port in filteredPortStatus" :key="port.TN" :class="{ pending: port.is_pending, loading: isLoading, testNeeded: rcvrTestNeeded(port), elevTestNeeded: elevTestNeeded(port) }">
             <td :title="port.TN">
-              <a :href="`tel:91${port.TN}`" @click="pending(port)">{{ formatTN(port.TN) }}</a>
+              <PhoneNumberDropdown :phoneNumber="port.TN.toString()" @dial="pending(port)" :show-lookup="false" />
             </td>
             <td :title="port.ring_to" @dblclick="enableEditing(port, 'ring_to')">
               <template v-if="isEditing(port, 'ring_to')">
@@ -118,9 +118,17 @@
                 {{ port.notes }}
               </template>
             </td>
-            <td :title="port.order_num">{{ port.order_num }}</td>
+            <td :title="port.order_num">
+                <a :href="'https://portal.inteliquent.com/CustomerPortal/portInOrderDetail.htm?orderId=' + port.order_num" target="_blank" rel="noopener noreferrer">
+                    {{ port.order_num }}
+                </a>
+            </td>
             <td :title="'last updated: ' + formatDate(port.last_updated)">{{ formatDate(port.port_date) }}</td>
-            <td :title="port.pbx_dst">{{ port.pbx_dst }}</td>
+            <td :title="port.pbx_dst" :class="{'different': port.pbx_dst && (
+                    (port.ring_to.trim() != '' && port.pbx_dst !== port.ring_to) 
+                    || (port.ring_to.trim() == '' && port.pbx_dst !== port.TN.toString())
+                )}">{{ port.pbx_dst }}
+            </td>
             <td :title="port.last_call">{{ getRelativeTime(port.last_call) }}</td>
             <td :title="port.call_count">{{ port.call_count }}</td>
             <td :title="port.last_tested">{{ getRelativeTime(port.last_tested) }}</td>
@@ -130,7 +138,10 @@
             </td>
             <td :title="port.last_cs_no">{{ port.last_cs_no }}</td>
             <td :title="port.LastHour">{{ formatHr(port.LastHour) }}</td>
-             <td><a v-if="port.last_cid" :href="'/phone-lookup?phone=' + port.last_cid" target="_blank">{{ port.last_cid }}</a><span v-else>{{ port.last_cid }}</span></td>
+            <td>
+                <PhoneNumberDropdown :phone-number="port.last_cid" v-if="port.last_cid" :show-dial="false" />
+                <span v-else>{{ port.last_cid }}</span>
+            </td>
             <td :title="formatDuration(port.avg_dur)">{{ formatDuration(port.avg_dur) }}</td>
             <td :title="port.elevator_acct" :class="{'inactive': ! port.acct_status || port.acct_status[0] !== 'A'}">{{ port.elevator_acct }}</td>
             <td :title="port.acct_status">{{ port.acct_status }}</td>
@@ -146,9 +157,13 @@
 <script>
 import { inject } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import PhoneNumberDropdown from '../components/PhoneNumberDropdown.vue';
 
 export default {
   name: 'PortStatus',
+  components: {
+    PhoneNumberDropdown
+  },
   data() {
     return {
       portStatus: [],
