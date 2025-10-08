@@ -1,10 +1,12 @@
 <template>
-  <div class="phone-number-dropdown">
+  <div class="phone-number-dropdown" ref="dropdown">
     <span @click="toggleDropdown" class="phone-number">{{ phoneNumber }}</span>
     <div v-if="dropdownVisible" class="dropdown-menu">
       <a v-if="showDial" :href="`tel:91${phoneNumber}`" @click="doDial">Dial Number</a>
       <a v-if="showCdr" :href="`/call-records?q=${phoneNumber}`" target="_blank" @click="closeDropdown">View CDRs</a>
       <a v-if="showLookup" :href="`/phone-lookup?phone=${phoneNumber}`" target="_blank" @click="closeDropdown">Lookup CID</a>
+      <a v-if="showPort" :href="`/port-status?q=${phoneNumber}`" target="_blank" @click="closeDropdown">Port Status</a>
+      <a @click="copyClipboard()">Copy</a>
     </div>
   </div>
 </template>
@@ -29,6 +31,10 @@ export default {
       type: Boolean,
       default: true
     },
+    showPort: {
+      type: Boolean,
+      default: false
+    },
     onDial: {
       type: Function,
       default: null
@@ -42,23 +48,43 @@ export default {
   methods: {
     toggleDropdown() {
       this.dropdownVisible = !this.dropdownVisible;
+
+      if (this.dropdownVisible) {
+        document.addEventListener('click', this.handleOutsideClick);
+      } else {
+        document.removeEventListener('click', this.handleOutsideClick);
+      }
     },
     closeDropdown() {
       this.dropdownVisible = false;
+      document.removeEventListener('click', this.handleOutsideClick);
+    },
+    handleOutsideClick(event) {
+      const dropdown = this.$refs.dropdown;
+      if (!dropdown.contains(event.target)) {
+        this.closeDropdown();
+      }
     },
     doDial(event) {
       if (this.onDial) {
         this.onDial(this.phoneNumber);
       }
       this.closeDropdown();
+    },
+    copyClipboard() {
+      navigator.clipboard.writeText(this.phoneNumber).then(() => {
+        this.closeDropdown();
+      });
     }
+  },
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleOutsideClick);
   }
 };
 </script>
 
 <style scoped>
 .phone-number-dropdown {
-  /* position: relative; */
   display: inline-block;
   cursor: pointer;
 }
@@ -70,8 +96,6 @@ export default {
 
 .dropdown-menu {
   position: absolute;
-  /* top: 100%; */
-  /* left: 0; */
   background: white;
   border: 1px solid #ccc;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);

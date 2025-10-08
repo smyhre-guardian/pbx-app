@@ -406,6 +406,18 @@ export default {
     },
     applySearch() {
       // Triggered on input to update the filtered results
+      const route = this.$route;
+      const router = this.$router;
+
+      // Update the query string with the search query
+      router.push({
+        path: route.path,
+        query: {
+          ...route.query,
+          q: this.searchQuery
+        }
+      });
+
       this.filteredPortStatus;
     }
   },
@@ -425,6 +437,9 @@ export default {
       this.sortColumn = route.query.sortColumn;
       this.sortAsc = route.query.sortAsc === 'true';
       this.sortTable(this.sortColumn, true);
+    }
+    if (route.query.q) {
+      this.searchQuery = route.query.q;
     }
 
     this.fetchPortStatus();

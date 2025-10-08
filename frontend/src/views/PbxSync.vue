@@ -20,7 +20,7 @@
         </thead>
         <tbody>
             <tr v-for="(line, index) in unmatched" :key="index">
-                <td>{{ line.phn }}</td>
+                <td><phone-number-dropdown :phone-number="line.phn" :show-port="true"></phone-number-dropdown></td>
                 <td>{{ line.left }}</td>
                 <td>{{ line.right }}</td>
                 <td>
@@ -45,6 +45,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { diffChars, diffLines } from 'diff';
+import PhoneNumberDropdown from '../components/PhoneNumberDropdown.vue';
 
 const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const diffs = ref([]);

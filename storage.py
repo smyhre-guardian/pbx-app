@@ -300,7 +300,7 @@ def get_pbx_diff(pbx: str) -> Optional[list[dict]]:
     etc_dir = os.getenv("ASTERISK_ETC_DIR", "/etc/asterisk/")
     if not os.path.isdir(etc_dir):
         return None
-    saved_file = os.path.join(etc_dir, f"extensions.conf")
+    saved_file = os.path.join(etc_dir, f"avaya_x.conf")
     if not os.path.isfile(saved_file):
         return None
     current.sort(key=lambda x: x.get("exten", ""))
@@ -317,8 +317,8 @@ def get_pbx_diff(pbx: str) -> Optional[list[dict]]:
             current_lines = sorted([line.strip() for line in current_lines if line.strip().startswith("exten")])
             # current_lines = sorted([line.strip() for line in current_lines.splitlines() if line.strip()])
 
-            current_dict = {line[9:19]: line[36:] for line in current_lines}
-            saved_dict = {line[9:19]: line[36:] for line in saved_lines}
+            current_dict = {line[9:19]: line[22:] for line in current_lines}
+            saved_dict = {line[9:19]: line[22:] for line in saved_lines}
 
             all_nums = sorted(set(current_dict.keys()).union(saved_dict.keys()))
 

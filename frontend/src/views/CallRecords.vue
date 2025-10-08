@@ -27,6 +27,7 @@
             <th>Notes</th>
             <th>Port Date</th>
             <th>Order #</th>
+            <th>Disposition</th>
           </tr>
         </thead>
         <tbody>
@@ -34,8 +35,9 @@
           <tr v-for="r in records" :key="r.id">
             <td>{{ r.pbx.replace('SVR', '') }}</td>
             <td>{{ fmtDate(r.calldate) }}</td>
-            <td>{{ fmtNumber(r.caller) }}</td>
-            <td>{{ r.orig_dnis }}</td>
+            
+            <td><PhoneNumberDropdown :phoneNumber="fmtNumber(r.caller)" @dial="r.caller" :show-dial="false" :show-port="false" /></td>
+            <td><phone-number-dropdown :phoneNumber="r.orig_dnis" :show-lookup="false"></phone-number-dropdown></td>
             <td>{{ r.callee !== r.orig_dnis ? fmtNumber(r.callee) : '-same-' }}</td>
             <td>{{ r.duration || '-' }}</td>
             <td :class="{'highlight': !highlight(r)}">{{ r.cs_no || '-' }} <span v-if="r.cs_no_rows">[ {{ r.cs_no_rows  }} others]</span></td>
@@ -43,6 +45,7 @@
             <td>{{ r.lumen_notes || '-' }}</td>
             <td>{{ r.lumen_port_date || '-' }}</td>
             <td>{{ r.lumen_order_num || '-' }}</td>
+            <td>{{ r.disposition }}</td>
           </tr>
         </tbody>
       </table>
@@ -59,6 +62,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import PhoneNumberDropdown from '../components/PhoneNumberDropdown.vue'
 
 const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
