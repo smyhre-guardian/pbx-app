@@ -419,7 +419,7 @@ def sync_pbx_extensions(pbx: str) -> bool:
         
         import subprocess
         try:
-            result = subprocess.run(["sudo", "syncPbx.sh", pbx], capture_output=True, text=True, check=True)
+            result = subprocess.run(["sudo", "/home/guardian/pbx-app/syncPbx.sh", pbx], capture_output=True, text=True, check=True)
             return True
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"sync failed: {e.stderr}")
