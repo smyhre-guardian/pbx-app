@@ -6,6 +6,7 @@
       <button @click="fetchDiff('SVRPBX01')">SVRPBX01</button>
       <button @click="fetchDiff('SVRPBX02')">SVRPBX02</button>
       <button @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
+      <button @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
     </section>
 
     <section v-if="diffs.length > 0">
