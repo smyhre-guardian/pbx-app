@@ -6,6 +6,7 @@
         <router-link to="/call-records">Call Records</router-link>
         <router-link to="/phone-lookup">Phone Lookup</router-link>
         <router-link to="/pbx-sync">PBX Sync</router-link>
+        <router-link to="/upload">Upload Lumen Master</router-link>
         
       </div>
       <button @click="refresh" class="refresh-button" :disabled="isLoading">

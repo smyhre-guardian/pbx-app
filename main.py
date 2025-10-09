@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from fastapi import HTTPException, Body
 from dotenv import load_dotenv
+import pandas as pd
+from fastapi import UploadFile, File
 
 load_dotenv()
 
@@ -171,6 +173,40 @@ def diff_pbx(pbx: str):
         raise HTTPException(status_code=404, detail="PBX not found or no previous version to compare")
     # return PlainTextResponse(diff)
     return diff;
+
+@app.post("/upload-excel")
+async def upload_excel(file: UploadFile = File(...)):
+    """Upload an Excel file and return its contents as JSON."""
+    try:
+        # Read the Excel file into a DataFrame
+        df = pd.read_excel(file.file, header=3, sheet_name='TN')
+        df.fillna('', inplace=True)  # Replace NaN with empty strings
+        # df.dropna()
+
+        # Convert the DataFrame to a list of dictionaries
+        data = df.to_dict(orient='records')
+
+        # Compare with what we have in database
+        from storage import excel_diff
+        diff = excel_diff(data)
+
+        return {"data": diff}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+
+@app.post("/pbx-sync/{pbx}", summary="Synchronize PBX")
+def pbx_sync(pbx: str):
+    """Simulate PBX synchronization logic."""
+    try:
+        from storage import sync_pbx_extensions
+        sync_pbx_extensions(pbx)
+        result = {
+            "status": "success",
+            "message": "PBX synchronization completed successfully."
+        }
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PBX sync failed: {str(e)}")
 
 if __name__ == "__main__":
     # Run with: python main.py

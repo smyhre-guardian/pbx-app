@@ -5,6 +5,7 @@
     <section>
       <button @click="fetchDiff('SVRPBX01')">SVRPBX01</button>
       <button @click="fetchDiff('SVRPBX02')">SVRPBX02</button>
+      <button @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
     </section>
 
     <section v-if="diffs.length > 0">
@@ -52,7 +53,7 @@ const diffs = ref([]);
 const status = ref('');
 
 const unmatched = computed(() => {
-  return diffs.value.filter(line => !line.is_match && !line.is_new)
+  return diffs.value.filter(line => !line.is_match)
 });
 
 const runDiff = function(a,b) {
@@ -71,6 +72,27 @@ async function fetchDiff(server) {
     const data = await res.json();
     diffs.value = data;
     status.value = '';
+  } catch (err) {
+    status.value = `Error fetching differences: ${err.message}`;
+    console.error(err);
+  }
+}
+
+async function applyConfig(server) {
+  status.value = `Applying configuration for ${server}...`;
+  diffs.value = [];
+
+  try {
+    const res = await fetch(`${baseUrl}/pbx-sync/${server}`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch: ${res.status}`);
+    }
+    const data = await res.json();
+    diffs.value = data;
+    status.value = 'done.';
   } catch (err) {
     status.value = `Error fetching differences: ${err.message}`;
     console.error(err);

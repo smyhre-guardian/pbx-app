@@ -2,9 +2,10 @@ import sys
 from time import sleep
 from typing import Optional, List, Any, Union, cast
 import os
+from collections import defaultdict
 from sqlmodel import SQLModel, Session, select, create_engine, col
 from models import LumenDw, PhoneNumber, Lumen, Cdr, vPhoneLookup, PortStatus
-from datetime import datetime
+from datetime import date, datetime
 from sqlalchemy import desc, text
 from sqlalchemy.engine import URL
 
@@ -232,6 +233,11 @@ class CdrStorage:
                 })
             return out
 
+    def list_all_lumen(self) -> List[Lumen]:
+        with Session(engine_cdr) as session:
+            stmt = select(Lumen)
+            return list(session.exec(stmt))
+
     def list_recent(self, limit: int = 100) -> List[Cdr]:
         with Session(engine_cdr) as session:
             col = cast(Any, Cdr.calldate)
@@ -309,6 +315,7 @@ def get_pbx_diff(pbx: str) -> Optional[list[dict]]:
     # assert False, current_lines
     try:
         import difflib
+        from collections import defaultdict
         with open(saved_file, "r") as f_saved:
             # Map the current extensions to lines using the "exten" field
             
@@ -379,6 +386,97 @@ def get_pbx_diff(pbx: str) -> Optional[list[dict]]:
     except Exception as e:
         print(f"Error generating diff:  {type(e).__name__} {e}", file=sys.stderr)
         return None
+
+def sync_pbx_extensions(pbx: str) -> bool:
+    """Save the current dialplan for the specified PBX to the saved version file."""
+    s = PortStatusStorage()
+    current = s.get_asterisk_extensions()
+
+    etc_dir = os.getenv("ASTERISK_ETC_DIR", "/etc/asterisk/")
+    if not os.path.isdir(etc_dir):
+        return False
+    saved_file = os.path.join(etc_dir, f"avaya_x.conf.pending")
+    current.sort(key=lambda x: (x.get("order_num", ""), x.get("TN", "")))
+    # Group extensions by order_num and add a header for each group
+    current_lines = ["[avaya_x]\n"]
+    current_group = None
+    for row in current:
+        group = row.get("order_num", "")
+        if group != current_group:
+            current_group = group
+            port_date = row.get("port_date", "")
+            current_lines.append(f"\n\n; ---- Order Number: {group}  Port Date: {port_date} ----\n")
+        exten = row.get("exten", "")
+        if exten:
+            current_lines.append(exten)
+    try:
+        with open(saved_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(current_lines) + "\n")
+        return True
+    except Exception as e:
+        print(f"Error saving PBX extensions:  {type(e).__name__} {e}", file=sys.stderr)
+        return False
+
+def excel_diff(data: list[dict]) -> list[dict]:
+    """Compare uploaded Excel data with existing Lumen data and return differences."""
+    s = CdrStorage()
+    existing = s.list_all_lumen()
+    existing_dict = {str(row.TN): row for row in existing}
+    column_map = {
+        "Toll Free/TN's": "TN",
+        "Ring-To #": "ring_to",
+        "DNIS": "DNIS",
+        "Port Status": "status",
+        "Order Number": "order_num",
+        "Port Date": "port_date",
+        "Usage": "usage",
+        "Notes": "notes",
+    }
+
+    import dateutil.parser
+    def safe_parse_date(val):
+        if not val or str(val).strip().lower() in ("none", "nat"):
+            return "None"
+        try:
+            return dateutil.parser.parse(val).strftime("%Y-%m-%d")
+        except Exception:
+            return "None"
+    diffs = []
+    for row in data:
+        tn = str(row.get("Toll Free/TN's", "")).strip()
+        if not tn:
+            continue
+        if tn in existing_dict:
+            existing_row = existing_dict[tn]
+            row_diff = {
+                "TN": tn,
+                "is_new": False,
+                "differences": {},
+                "existing": {k: str(getattr(existing_row, k, "")) for k in column_map.values()}
+            }
+            for key, col in column_map.items():
+                new_value = str(row.get(key, "")).strip()
+                existing_value = str(getattr(existing_row, col, "")).strip()
+                if col == "port_date":
+                    existing_value = safe_parse_date(existing_value)
+                    new_value = safe_parse_date(new_value)
+                if new_value != existing_value:
+                    if col == "ring_to" and new_value[-7:] == existing_value[-7:]:
+                        continue  # ignore differences in ring_to if they only differ by area code
+                    row_diff["differences"][col] = {
+                        "old": existing_value,
+                        "new": new_value
+                    }
+            if row_diff["differences"]:
+                diffs.append(row_diff)
+        else:
+            diffs.append({
+                "TN": tn,
+                "is_new": True,
+                "differences": row,
+                "existing": None
+            })
+    return diffs
 
 # Instances
 storage_instance = AppStorage()  # backward-compatible name used across the codebase
