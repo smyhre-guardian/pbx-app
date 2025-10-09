@@ -54,6 +54,16 @@
         <button @click="prevPage" :disabled="page <= 1">Prev</button>
         <span>Page {{ page }}</span>
         <button @click="nextPage">Next</button>
+        <label style="margin-left: 16px;">
+          Page Size:
+            <select v-model.number="pageSize" @change="onPageSizeChange">
+            <option :value="5">5</option>
+            <option :value="10">10</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+            </select>
+        </label>
       </div>
     </section>
   </main>
@@ -70,7 +80,7 @@ const status = ref('')
 const records = ref([])
 const q = ref('')
 const page = ref(1)
-const pageSize = 10
+const pageSize = ref(10)
 const router = useRouter()
 const route = useRoute()
 
@@ -106,7 +116,7 @@ async function loadRecords() {
     const params = new URLSearchParams()
     params.set('q', q.value || '')
     params.set('page', String(page.value))
-    params.set('page_size', String(pageSize))
+    params.set('page_size', String(pageSize.value))
 
     // Update the query string in the URL
     const newQuery = { ...Object.fromEntries(params.entries()) };
@@ -130,6 +140,11 @@ if (queryQ) {
 
 function nextPage() { page.value++; loadRecords() }
 function prevPage() { if (page.value > 1) { page.value--; loadRecords() } }
+
+function onPageSizeChange() {
+  page.value = 1; // Reset to the first page
+  loadRecords();
+}
 
 // initial load
 loadRecords()

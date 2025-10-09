@@ -40,6 +40,13 @@
       </div>
     </div>
 
+    <div>
+      <label>
+        <input type="checkbox" v-model="showPending" />
+        Show Pending
+      </label>
+    </div>
+
     <!-- Modal for RCVR Prefixes -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
@@ -129,7 +136,14 @@
                     || (port.ring_to.trim() == '' && port.pbx_dst !== port.TN.toString())
                 )}">{{ port.pbx_dst }}
             </td>
-            <td :title="port.last_call">{{ getRelativeTime(port.last_call) }}</td>
+            <td 
+              :title="port.last_call" 
+              :style="{
+              background: getTestedBgColor(port.last_call)
+              }"
+            >
+              {{ getRelativeTime(port.last_call) }}
+            </td>
             <td :title="port.call_count">{{ port.call_count }}</td>
             <td :title="port.last_tested">{{ getRelativeTime(port.last_tested) }}</td>
             <td :title="port.test_count">{{ port.test_count }}</td>
@@ -178,7 +192,8 @@ export default {
       rcvrPrefixes: [],
       showModal: false,
       selectedRcvrPrefixes: [],
-      searchQuery: ''
+      searchQuery: '',
+      showPending: false
     };
   },
   computed: {
@@ -190,7 +205,9 @@ export default {
         );
 
         if (!matchesSearch) return false;
+        if (!port.is_pending && !port.is_ported) return false;
 
+        if (!this.showPending && port.is_pending) return false;
         if (
           (this.elevatorFilter === 'exclude' && this.isElev(port)) ||
           (this.elevatorFilter === 'only' && !this.isElev(port))
@@ -419,6 +436,21 @@ export default {
       });
 
       this.filteredPortStatus;
+    },
+    getTestedBgColor(date) {
+      if (!date) return 'lightgray';
+
+      const now = new Date();
+      const testedDate = new Date(date);
+      const diffInDays = Math.floor((now - testedDate) / (1000 * 60 * 60 * 24));
+
+      if (diffInDays <= 7) {
+        return 'lightgreen'; // Tested within the last week
+      } else if (diffInDays <= 30) {
+        return 'yellow'; // Tested within the last month
+      } else {
+        return 'red'; // Not tested for over a month
+      }
     }
   },
   created() {
