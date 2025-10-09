@@ -363,11 +363,11 @@ def get_pbx_diff(pbx: str) -> Optional[list[dict]]:
             saved_txt = "\n".join(left_out)
             current_txt = "\n".join(right_out)
 
-            with open(r"C:\\Temp\\saved.conf", "w", encoding="utf-8") as f:
-                f.write(saved_txt)
+            # with open(r"C:\\Temp\\saved.conf", "w", encoding="utf-8") as f:
+                # f.write(saved_txt)
 
-            with open(r"C:\\Temp\\current.conf", "w", encoding="utf-8") as f:
-                f.write(current_txt)
+            # with open(r"C:\\Temp\\current.conf", "w", encoding="utf-8") as f:
+                # f.write(current_txt)
 
             return out
 
