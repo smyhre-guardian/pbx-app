@@ -91,8 +91,8 @@ async function applyConfig(server) {
       throw new Error(`Failed to fetch: ${res.status}`);
     }
     const data = await res.json();
-    diffs.value = data;
-    status.value = 'done.';
+    status.value = data.status;
+    status.value += ': ' + data.message;
   } catch (err) {
     status.value = `Error fetching differences: ${err.message}`;
     console.error(err);

@@ -196,17 +196,16 @@ async def upload_excel(file: UploadFile = File(...)):
 
 @app.post("/pbx-sync/{pbx}", summary="Synchronize PBX")
 def pbx_sync(pbx: str):
-    """Simulate PBX synchronization logic."""
     try:
         from storage import sync_pbx_extensions
-        sync_pbx_extensions(pbx)
+        result = sync_pbx_extensions(pbx)
         result = {
-            "status": "success",
-            "message": "PBX synchronization completed successfully."
+            "status": "ok",
+            "message": result if isinstance(result, str) else "PBX synchronization completed successfully."
         }
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PBX sync failed: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     # Run with: python main.py
