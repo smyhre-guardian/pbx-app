@@ -409,6 +409,9 @@ def sync_pbx_extensions(pbx: str) -> bool:
         exten = row.get("exten", "")
         if exten:
             current_lines.append(exten)
+
+    current_lines.append("; Default fallthrough - send all to avaya")
+    current_lines.append("exten => _X.,1,Goto(to_avaya,${EXTEN:-10},1)")
     try:
         with open(saved_file, "w", encoding="utf-8") as f:
             f.write("\n".join(current_lines) + "\n")
