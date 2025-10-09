@@ -1,3 +1,4 @@
+from http.client import HTTPException
 import sys
 from time import sleep
 from typing import Optional, List, Any, Union, cast
@@ -415,7 +416,14 @@ def sync_pbx_extensions(pbx: str) -> bool:
     try:
         with open(saved_file, "w", encoding="utf-8") as f:
             f.write("\n".join(current_lines) + "\n")
-        return True
+        
+        import subprocess
+        try:
+            result = subprocess.run(["sudo", "syncPbx.sh", pbx], capture_output=True, text=True, check=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"sync failed: {e.stderr}")
+        
     except Exception as e:
         raise RuntimeError(f"Error saving PBX extensions: {type(e).__name__} {e}")
         return False
