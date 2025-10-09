@@ -36,7 +36,7 @@
             <td>{{ r.pbx.replace('SVR', '') }}</td>
             <td>{{ fmtDate(r.calldate) }}</td>
             
-            <td><PhoneNumberDropdown :phoneNumber="fmtNumber(r.caller)" @dial="r.caller" :show-dial="false" :show-port="false" /></td>
+            <td><PhoneNumberDropdown :phoneNumber="fmtNumber(r.caller)" :show-dial="false" :show-port="false" /></td>
             <td><phone-number-dropdown :phoneNumber="r.orig_dnis" :show-lookup="false"></phone-number-dropdown></td>
             <td>{{ r.callee !== r.orig_dnis ? fmtNumber(r.callee) : '-same-' }}</td>
             <td>{{ r.duration || '-' }}</td>

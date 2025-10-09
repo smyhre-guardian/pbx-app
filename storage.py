@@ -414,7 +414,7 @@ def sync_pbx_extensions(pbx: str) -> bool:
             f.write("\n".join(current_lines) + "\n")
         return True
     except Exception as e:
-        print(f"Error saving PBX extensions:  {type(e).__name__} {e}", file=sys.stderr)
+        raise RuntimeError(f"Error saving PBX extensions: {type(e).__name__} {e}")
         return False
 
 def excel_diff(data: list[dict]) -> list[dict]:
