@@ -43,7 +43,7 @@
     <div>
       <label>
         <input type="checkbox" v-model="showPending" />
-        Show Pending
+        Show Pending Orders
       </label>
     </div>
 
@@ -89,9 +89,9 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="port in filteredPortStatus" :key="port.TN" :class="{ pending: port.is_pending, loading: isLoading, testNeeded: rcvrTestNeeded(port), elevTestNeeded: elevTestNeeded(port) }">
+          <tr v-for="port in filteredPortStatus" :key="port.TN" :class="{ pending: port.is_clicked, loading: isLoading, testNeeded: rcvrTestNeeded(port), elevTestNeeded: elevTestNeeded(port) }">
             <td :title="port.TN">
-              <PhoneNumberDropdown :phoneNumber="port.TN.toString()" @dial="pending(port)" :show-lookup="false" />
+              <PhoneNumberDropdown :phoneNumber="port.TN.toString()" @dial="markYellow(port)" :show-lookup="false" />
             </td>
             <td :title="port.ring_to" @dblclick="enableEditing(port, 'ring_to')">
               <template v-if="isEditing(port, 'ring_to')">
@@ -125,7 +125,7 @@
                 {{ port.notes }}
               </template>
             </td>
-            <td :title="port.order_num">
+            <td :title="port.status" :class="{'pending': port.is_pending}">
                 <a :href="'https://portal.inteliquent.com/CustomerPortal/portInOrderDetail.htm?orderId=' + port.order_num" target="_blank" rel="noopener noreferrer">
                     {{ port.order_num }}
                 </a>
@@ -297,8 +297,8 @@ export default {
       }
       return phone;
     },
-    pending(port) {
-      port.is_pending = true;
+    markYellow(port) {
+      port.is_clicked = true;
     },
     rcvrTestNeeded(port) {
       return port.usage.toLowerCase().indexOf('rcvr') !== -1 && (!port.call_count || port.call_count < 1) && (!port.test_count || port.test_count < 1);
@@ -596,5 +596,8 @@ td.different {
   max-width: 400px;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+td.pending a {
+    color: rgb(135, 135, 0);
 }
 </style>
