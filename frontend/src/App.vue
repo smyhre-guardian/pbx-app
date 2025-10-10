@@ -2,6 +2,7 @@
   <div id="app">
     <nav class="nav">
       <div class="nav-links">
+        <router-link to="/about">About</router-link>
         <router-link to="/port-status">Port Status</router-link>
         <router-link to="/call-records">Call Records</router-link>
         <router-link to="/phone-lookup">Phone Lookup</router-link>
