@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref, provide } from 'vue';
+import { ref, provide, onMounted } from 'vue';
 
 const isLoading = ref(false);
 const refresh = () => {
@@ -35,6 +35,13 @@ provide('setRefreshCallback', (callback) => {
 
 provide('setLoading', (loading) => {
   isLoading.value = loading;
+});
+
+onMounted(() => {
+  const nav = document.querySelector('.nav');
+  if (window.location.href.includes('localhost')) {
+    nav.style.backgroundColor = 'yellow';
+  }
 });
 </script>
 
