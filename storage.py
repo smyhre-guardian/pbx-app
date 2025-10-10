@@ -190,16 +190,16 @@ class CdrStorage:
         """Return CDRs joined with Lumen on orig_dnis == TN, including Lumen fields."""
         with Session(engine_dw) as session:
             col = cast(Any, Cdr.calldate)
-            stmt = select(Cdr, LumenDw).join(LumenDw, Cdr.__table__.c.orig_dnis == LumenDw.__table__.c.TN)
+            stmt = select(Cdr, LumenDw).join(LumenDw, Cdr.__table__.c.orig_dnis == LumenDw.__table__.c.TN) # type: ignore
             if start and end:
                 stmt = stmt.where(col != None, col >= start, col <= end)
             if q:
                 ql = str(q).lower()
                 stmt = stmt.where(
-                    (Cdr.__table__.c.src.like(f"%{ql}%")) |
-                    (Cdr.__table__.c.dst.like(f"%{ql}%")) |
-                    (Cdr.__table__.c.clid.like(f"%{ql}%")) |
-                    (Cdr.__table__.c.orig_dnis.like(f"%{ql}%"))
+                    (Cdr.__table__.c.src.like(f"%{ql}%")) | # type: ignore
+                    (Cdr.__table__.c.dst.like(f"%{ql}%")) | # type: ignore
+                    (Cdr.__table__.c.clid.like(f"%{ql}%")) | # type: ignore
+                    (Cdr.__table__.c.orig_dnis.like(f"%{ql}%")) # type: ignore
                 )
             stmt = stmt.order_by(desc(col)).limit(limit)
             results = session.exec(stmt).all()
@@ -400,6 +400,7 @@ def sync_pbx_extensions(pbx: str) -> bool|str:
     current.sort(key=lambda x: (x.get("order_num", ""), x.get("TN", "")))
     # Group extensions by order_num and add a header for each group
     current_lines = ["[avaya_x]\n"]
+    current_lines.append("exten => 2066265871,1,Goto(to_ivr,${EXTEN:-10}, 1)") # IVR ext
     current_group = None
     for row in current:
         group = row.get("order_num", "")

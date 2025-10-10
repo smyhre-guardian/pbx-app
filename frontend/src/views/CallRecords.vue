@@ -37,7 +37,7 @@
             <td>{{ fmtDate(r.calldate) }}</td>
             
             <td><PhoneNumberDropdown :phoneNumber="fmtNumber(r.caller)" :show-dial="false" :show-port="false" /></td>
-            <td><phone-number-dropdown :phoneNumber="r.orig_dnis" :show-lookup="false"></phone-number-dropdown></td>
+            <td><phone-number-dropdown :phoneNumber="r.orig_dnis" :show-lookup="false" :show-port="true"></phone-number-dropdown></td>
             <td>{{ r.callee !== r.orig_dnis ? fmtNumber(r.callee) : '-same-' }}</td>
             <td>{{ r.duration || '-' }}</td>
             <td :class="{'highlight': !highlight(r)}">{{ r.cs_no || '-' }} <span v-if="r.cs_no_rows">[ {{ r.cs_no_rows  }} others]</span></td>
