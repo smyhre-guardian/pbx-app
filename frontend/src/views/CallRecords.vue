@@ -6,8 +6,8 @@
 
     <section>
       <div class="controls">
-        <label>Search: <input v-model="q" @keyup.enter="resetAndLoad" placeholder="phone number or caller" /></label>
-        <button @click="loadRecords">Search</button>
+        <label>Search: <input v-model="q" placeholder="phone number or caller" /></label>
+        <button @click="resetAndLoad">Search</button>
       </div>
 
       <div v-if="records.length">
