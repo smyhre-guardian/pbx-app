@@ -1,12 +1,20 @@
 <template>
   <main>
     <h1>PBX Sync</h1>
+    <p>Run the PBX2 diff first, then sync PBX2.</p>
+    <p>If no errors, proceed to PBX1</p>
 
-    <section>
-      <button @click="fetchDiff('SVRPBX01')">SVRPBX01</button>
-      <button @click="fetchDiff('SVRPBX02')">SVRPBX02</button>
-      <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
-      <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
+    <section style="display: flex; gap: 20px; margin-bottom: 20px; justify-content: flex-start;">
+      <div>
+        <button @click="fetchDiff('SVRPBX02')">DIFF SVRPBX02</button>
+        <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
+      </div>
+      <div>
+        <button @click="fetchDiff('SVRPBX01')">DIFF SVRPBX01</button>
+        <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
+      </div>
+      
+      
     </section>
 
     <section v-if="diffs.length > 0">
@@ -113,6 +121,7 @@ button {
   margin: 8px;
   font-size: 16px;
   cursor: pointer;
+  display: block;
 }
 td {
     text-align: left;
