@@ -2,6 +2,7 @@
   <div class="phone-number-dropdown" ref="dropdown">
     <span @click="toggleDropdown" class="phone-number">{{ phoneNumber }}</span>
     <div v-if="dropdownVisible" class="dropdown-menu">
+      <strong>{{ phoneNumber }}</strong>
       <a v-if="showDial" :href="`tel:91${phoneNumber}`" @click="doDial">Dial Number</a>
       <a v-if="showCdr" :href="`/call-records?q=${phoneNumber}`" target="_blank" @click="closeDropdown">View CDRs</a>
       <a v-if="showLookup" :href="`/phone-lookup?phone=${phoneNumber}`" target="_blank" @click="closeDropdown">Lookup CID</a>
