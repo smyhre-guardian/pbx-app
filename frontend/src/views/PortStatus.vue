@@ -46,6 +46,12 @@
         Show Pending Orders
       </label>
     </div>
+    <div>
+      <label>
+        <input type="checkbox" v-model="showOrderless" />
+        Show numbers without Order #s
+      </label>
+    </div>
 
     <!-- Modal for RCVR Prefixes -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
@@ -125,10 +131,15 @@
                 {{ port.notes }}
               </template>
             </td>
-            <td :title="port.status" :class="{'pending': port.is_pending}">
-                <a :href="'https://portal.inteliquent.com/CustomerPortal/portInOrderDetail.htm?orderId=' + port.order_num" target="_blank" rel="noopener noreferrer">
+            <td :title="port.status" :class="{'pending': port.is_pending}" @dblclick="enableEditing(port, 'order_num')">
+                <template v-if="isEditing(port, 'order_num')">
+                  <input v-model="port.editableValues.order_num" @blur="saveEdit(port, 'order_num')" @keyup.enter="saveEdit(port, 'order_num')" style="width: 80px;" />
+                </template>
+                <template v-else>
+                  <a :href="'https://portal.inteliquent.com/CustomerPortal/portInOrderDetail.htm?orderId=' + port.order_num" target="_blank" rel="noopener noreferrer">
                     {{ port.order_num }}
-                </a>
+                  </a>
+                </template>
             </td>
             <td :title="'last updated: ' + formatDate(port.last_updated)">{{ formatDate(port.port_date) }}</td>
             <td :title="port.pbx_dst" :class="{'different': port.pbx_dst && (
@@ -193,7 +204,8 @@ export default {
       showModal: false,
       selectedRcvrPrefixes: [],
       searchQuery: '',
-      showPending: false
+      showPending: false,
+      showOrderless: false,
     };
   },
   computed: {
@@ -205,9 +217,10 @@ export default {
         );
 
         if (!matchesSearch) return false;
-        if (!port.is_pending && !port.is_ported) return false;
+        if (!port.is_pending && !port.is_ported && !this.showOrderless) return false;
 
         if (!this.showPending && port.is_pending) return false;
+        if (!this.showOrderless && port.has_no_order) return false;
         if (
           (this.elevatorFilter === 'exclude' && this.isElev(port)) ||
           (this.elevatorFilter === 'only' && !this.isElev(port))
