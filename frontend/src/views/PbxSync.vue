@@ -5,8 +5,8 @@
     <section>
       <button @click="fetchDiff('SVRPBX01')">SVRPBX01</button>
       <button @click="fetchDiff('SVRPBX02')">SVRPBX02</button>
-      <button @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
-      <button @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
+      <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
+      <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
     </section>
 
     <section v-if="diffs.length > 0">
@@ -111,12 +111,8 @@ main {
 }
 button {
   margin: 8px;
-  padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-}
-button:hover {
-  background-color: #f0f0f0;
 }
 td {
     text-align: left;

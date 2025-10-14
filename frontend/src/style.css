@@ -63,6 +63,10 @@ button {
     cursor: pointer;
 }
 
+button:hover {
+    filter: brightness(130%);
+}
+
 button.danger {
     background: #ef4444;
 }
