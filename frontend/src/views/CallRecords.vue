@@ -6,7 +6,14 @@
 
     <section>
       <div class="controls">
-        <label>Search: <input v-model="q" placeholder="phone number or caller" /></label>
+        <label>
+          Search: 
+          <input 
+            v-model="q" 
+            placeholder="phone number or caller" 
+            @keyup.enter="resetAndLoad"
+          />
+        </label>
         <button @click="resetAndLoad">Search</button>
       </div>
 
