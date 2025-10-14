@@ -294,7 +294,7 @@ class PortStatusStorage:
             return prefixes;
     def get_asterisk_extensions(self):
         with Session(engine_dw) as session:
-            query = text("SELECT * from vAsteriskExtensions")
+            query = text("SELECT * from vAsteriskExtensions WHERE TN <> '2066265871' ORDER BY order_num, TN")
             result = session.execute(query)
             extensions = [dict(row._mapping) for row in result]
             return extensions;
