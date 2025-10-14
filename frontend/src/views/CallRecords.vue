@@ -6,7 +6,7 @@
 
     <section>
       <div class="controls">
-        <label>Search: <input v-model="q" @keyup.enter="loadRecords" placeholder="phone number or caller" /></label>
+        <label>Search: <input v-model="q" @keyup.enter="resetAndLoad" placeholder="phone number or caller" /></label>
         <button @click="loadRecords">Search</button>
       </div>
 
@@ -140,6 +140,8 @@ if (queryQ) {
 
 function nextPage() { page.value++; loadRecords() }
 function prevPage() { if (page.value > 1) { page.value--; loadRecords() } }
+
+function resetAndLoad() { page.value = 1; loadRecords(); }
 
 function onPageSizeChange() {
   page.value = 1; // Reset to the first page
