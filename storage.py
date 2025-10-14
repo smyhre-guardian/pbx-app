@@ -404,6 +404,9 @@ def sync_pbx_extensions(pbx: str) -> bool|str:
     current_group = None
     for row in current:
         group = row.get("order_num", "")
+        tn = row.get("TN", "")
+        if (tn == "2066265871"):
+            continue  # skip IVR extension
         if group != current_group:
             current_group = group
             port_date = row.get("port_date", "")
