@@ -10,7 +10,7 @@
         <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
       </div>
       <div>
-        <button @click="fetchDiff('SVRPBX01')">DIFF SVRPBX01</button>
+        <!-- <button @click="fetchDiff('SVRPBX01')">DIFF SVRPBX01</button> -->
         <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
       </div>
       
