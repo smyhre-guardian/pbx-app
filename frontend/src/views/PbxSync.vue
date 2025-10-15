@@ -7,10 +7,12 @@
     <section style="display: flex; gap: 20px; margin-bottom: 20px; justify-content: flex-start;">
       <div>
         <button @click="fetchDiff('SVRPBX02')">DIFF SVRPBX02</button>
-        <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
+        
       </div>
       <div>
+
         <!-- <button @click="fetchDiff('SVRPBX01')">DIFF SVRPBX01</button> -->
+        <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX02')">Apply SVRPBX02</button>
         <button :disabled="diffs.length == 0" @click="applyConfig('SVRPBX01')">Apply SVRPBX01</button>
       </div>
       
