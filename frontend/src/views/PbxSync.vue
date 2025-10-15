@@ -64,7 +64,7 @@ const diffs = ref([]);
 const status = ref('');
 
 const unmatched = computed(() => {
-  return diffs.value.filter(line => !line.is_match && !line.is_new)
+  return diffs.value.filter(line => !line.is_match)
 });
 
 const runDiff = function(a,b) {
