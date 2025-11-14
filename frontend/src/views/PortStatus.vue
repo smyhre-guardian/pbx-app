@@ -431,7 +431,7 @@ export default {
     },
     checkRcvrUsage(port) {
       if (this.isRcvr(port)) {
-        this.openModal(port.usage.replace(/[^0-9]/g, ''));
+        this.openModal(port.usage.replace(' rcvr', '').replace(' RCVR', ''));
       }
     },
     applySearch() {
